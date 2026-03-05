@@ -8,18 +8,18 @@ edgeGitopsVms:
 
 # Minimal overrides for cluster names, versions, regions (e.g. overrides/values-cluster-names.yaml).
 # Merge override file FIRST so full regionalDR stays here and only clusterOverrides are applied.
-# clusterOverrides:
-#   primary:
-#     name: ocp-primary
-#     version: 4.18.7
-#     install_config:
-#       metadata:
-#         name: ocp-primary
-#       platform:
-#         aws:
-#           region: us-west-1
-#   secondary:
-#     name: ocp-secondary
+ clusterOverrides:
+   primary:
+     name: oa-rdr-primary
+     version: 4.18.7
+     install_config:
+       metadata:
+         name: oa-rdr-primary
+       platform:
+         aws:
+           region: us-east-1
+   secondary:
+     name: oa-rdr-secondary
 #     ...
 
 # DRPlacementControl (gitops-vm-protection) - override in values-cluster-names or values
