@@ -79,7 +79,9 @@ clusterGroup:
       name: opp-policy
       namespace: openshift
       project: opp
-      path: charts/hub/opp
+      path: "."
+      repoURL: https://github.com/OAharoni-RedHat/opp-policy-chart
+      chartVersion: ansible_refactor
       annotations:
         argocd.argoproj.io/sync-wave: "5"
       syncPolicy:
