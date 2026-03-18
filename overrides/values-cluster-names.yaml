@@ -13,7 +13,7 @@ clusterOverrides:
         name: oa-rdr-primary
       platform:
         aws:
-          region: us-west-1
+          region: eu-central-1
   secondary:
     name: oa-rdr-secondary
     version: 4.18.35
@@ -22,7 +22,7 @@ clusterOverrides:
         name: oa-rdr-secondary
       platform:
         aws:
-          region: us-east-1
+          region: eu-west-2
 
 # DRPC overrides (preferredCluster defaults to primary if unset)
 drpc:
