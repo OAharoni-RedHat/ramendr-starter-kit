@@ -1,5 +1,4 @@
 ---
-disableExternalSecrets: true
 waitForMetalNode: false
 
 vmDefaults:
