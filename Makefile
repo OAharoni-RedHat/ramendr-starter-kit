@@ -10,3 +10,29 @@ install-byoc: ramen-prereq pattern-install ## Installs the pattern onto a cluste
 ramen-prereq: ## Check if values.byoc false do nothing, else run the precheck agains clusters accessed from values-secrets
 	echo "Running precheck for ramendr"
 	cd ansible && ansible-playbook -i hosts $(EXTRA_ARGS) $(EXTRA_VARS) playbooks/validate_byoc.yml
+
+# Storage provider targets
+# The base pattern (make install) deploys without any storage-provider-specific
+# components.  Use one of the targets below to merge a storage overlay before
+# installing.  The merged values files should be committed and pushed to git
+# so the Validated Patterns operator can reconcile them.
+
+.PHONY: apply-storage-odf
+apply-storage-odf: ## Merge ODF/Ceph overlay into values-hub.yaml and values-resilient.yaml
+	@command -v yq >/dev/null 2>&1 || { echo "ERROR: yq is required. Install from https://github.com/mikefarah/yq"; exit 1; }
+	yq '.hub' overrides/values-storage-odf.yaml | \
+		yq eval-all '. as $$item ireduce ({}; . *+ $$item)' values-hub.yaml - > /tmp/_values-hub-merged.yaml \
+		&& mv /tmp/_values-hub-merged.yaml values-hub.yaml
+	yq '.resilient' overrides/values-storage-odf.yaml | \
+		yq eval-all '. as $$item ireduce ({}; . *+ $$item)' values-resilient.yaml - > /tmp/_values-resilient-merged.yaml \
+		&& mv /tmp/_values-resilient-merged.yaml values-resilient.yaml
+	@echo "ODF overlay merged. Review the changes, then commit and run 'make install'."
+
+.PHONY: install-odf
+install-odf: apply-storage-odf install ## Merge ODF/Ceph storage overlay and install the pattern
+
+.PHONY: install-dell
+install-dell: ## [STUB] Merge Dell storage overlay and install the pattern
+	@echo "Dell storage overlay not yet implemented."
+	@echo "Create overrides/values-hub-storage-dell.yaml and overrides/values-resilient-storage-dell.yaml"
+	@echo "following the same structure as the ODF overlays, then add an apply-storage-dell target."

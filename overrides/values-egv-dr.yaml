@@ -3,7 +3,7 @@ waitForMetalNode: false
 
 vmDefaults:
   accessMode: "ReadWriteMany"
-  storageClassName: "ocs-storagecluster-ceph-rbd-virtualization"
+  storageClassName: ""  # Set to your storage provider's virtualization storage class
   volumeMode: "Block"
   count: 1
   flavor: medium

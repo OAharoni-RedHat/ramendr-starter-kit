@@ -1,0 +1,41 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: odf-dr-prerequisites-checker
+  namespace: open-cluster-management
+  labels:
+    app.kubernetes.io/name: odf-dr-prerequisites
+    app.kubernetes.io/component: health-check
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+spec:
+  backoffLimit: 50
+  activeDeadlineSeconds: 14400
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: prerequisites-checker
+        image: {{ $.Values.ansible.containerImage }}
+        env:
+        - name: PRIMARY_CLUSTER
+          value: {{ include "rdr-odf.primaryClusterName" . | quote }}
+        - name: SECONDARY_CLUSTER
+          value: {{ include "rdr-odf.secondaryClusterName" . | quote }}
+        command:
+        - /bin/bash
+        - -c
+        - |
+            export PRIMARY_CLUSTER SECONDARY_CLUSTER
+            ODF_SCRIPT="$STAGE/roles/odf_dr_prerequisites/files/odf-dr-prerequisites-check.sh"
+            echo "Running ODF prerequisites script."
+            exec bash "$ODF_SCRIPT"
+        volumeMounts:
+        - name: ansible
+          mountPath: /ansible-cm
+          readOnly: true
+      volumes:
+      - name: ansible
+        configMap:
+          name: regionaldr-ansible
+      serviceAccountName: odf-dr-prerequisites-checker

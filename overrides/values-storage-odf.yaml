@@ -1,0 +1,138 @@
+---
+# ODF/Ceph storage overlay.
+# Applied by `make install-odf`, which extracts the hub and resilient sections
+# and merges each into the corresponding values file before running the install.
+#
+# To add a future storage provider (e.g. Dell), create overrides/values-storage-dell.yaml
+# with the same hub/resilient structure and add an install-dell target to the Makefile.
+
+hub:
+  clusterGroup:
+    namespaces:
+      - openshift-storage
+      - openshift-dr-system
+
+    subscriptions:
+      odf-multicluster-orchestrator:
+        name: odf-multicluster-orchestrator
+        namespace: openshift-operators
+
+      openshift-data-foundation:
+        name: odf-operator
+        namespace: openshift-storage
+
+    applications:
+      opp-odf:
+        name: opp-odf
+        namespace: openshift
+        project: opp
+        path: charts/hub/opp-odf
+        annotations:
+          argocd.argoproj.io/sync-wave: "6"
+        syncPolicy:
+          automated: {}
+          retry:
+            limit: 20
+            backoff:
+              duration: 5s
+              factor: 2
+              maxDuration: 3m
+          syncOptions:
+            - CreateNamespace=true
+            - ServerSideApply=true
+        extraValueFiles:
+          - '/overrides/values-cluster-names.yaml'
+
+      rdr-odf:
+        name: rdr-odf
+        namespace: regional-dr
+        project: opp
+        path: charts/hub/rdr-odf
+        annotations:
+          argocd.argoproj.io/sync-wave: "11"
+        syncPolicy:
+          automated: {}
+          retry:
+            limit: 60
+            backoff:
+              duration: 5s
+              factor: 2
+              maxDuration: 3m
+          syncOptions:
+            - RespectIgnoreDifferences=true
+        extraValueFiles:
+          - '/overrides/values-cluster-names.yaml'
+
+      odf:
+        name: odf
+        namespace: openshift-storage
+        project: opp
+        chart: openshift-data-foundations
+        chartVersion: 0.2.*
+        syncOptions:
+          - CreateNamespace=true
+        extraValueFiles:
+          - '$patternref/overrides/values-odf-chart.yaml'
+
+resilient:
+  clusterGroup:
+    namespaces:
+      - openshift-storage
+      - openshift-adp:
+          operatorGroup: true
+          targetNamespaces:
+            - openshift-adp
+
+    subscriptions:
+      openshift-data-foundation:
+        name: odf-operator
+        namespace: openshift-storage
+
+      openshift-oadp:
+        name: redhat-oadp-operator
+        namespace: openshift-adp
+        channel: stable
+
+    applications:
+      odf:
+        name: odf
+        namespace: openshift-storage
+        project: resilient
+        chart: openshift-data-foundations
+        chartVersion: 0.2.*
+        syncOptions:
+          - CreateNamespace=true
+        extraValueFiles:
+          - '$patternref/overrides/values-odf-chart.yaml'
+
+      adp-data-protection:
+        name: adp-data-protection-application
+        namespace: openshift-adp
+        project: resilient
+        repoURL: https://github.com/validatedpatterns/oadp-data-protection-application-chart.git
+        chartVersion: main
+        path: "."
+
+    imperative:
+      jobs:
+        - name: clean-golden-images
+          playbook: ansible/odf_fix_dataimportcrons.yml
+          verbosity: -vvv
+      clusterRoleYaml:
+        - apiGroups:
+            - "*"
+          resources:
+            - persistentvolumeclaims
+            - datavolumes
+            - dataimportcrons
+            - datasources
+          verbs:
+            - "*"
+        - apiGroups:
+            - "*"
+          resources:
+            - "*"
+          verbs:
+            - get
+            - list
+            - watch

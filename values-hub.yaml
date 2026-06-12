@@ -8,9 +8,7 @@ clusterGroup:
     - vault
     - golang-external-secrets
     - regional-dr
-    - openshift-dr-system
     - openshift-dr-ops
-    - openshift-storage
     - policies
   subscriptions:
     acm:
@@ -18,13 +16,6 @@ clusterGroup:
       namespace: open-cluster-management
       channel: release-2.15
 
-    odf-multicluster-orchestrator:
-      name: odf-multicluster-orchestrator
-      namespace: openshift-operators
-
-    openshift-data-foundation:
-      name: odf-operator
-      namespace: openshift-storage
 
   argoCD:
     resourceTrackingMethod: annotation
@@ -148,15 +139,6 @@ clusterGroup:
       project: hub
       chart: golang-external-secrets
       chartVersion: 0.2.*
-
-    odf:
-      name: odf
-      namespace: openshift-storage
-      project: opp
-      chart: openshift-data-foundations
-      chartVersion: 0.2.*
-      extraValueFiles:
-        - '$patternref/overrides/values-odf-chart.yaml'
 
   imperative:
     verbosity: "-vvv"

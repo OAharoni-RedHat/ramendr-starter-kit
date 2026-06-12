@@ -1,0 +1,33 @@
+---
+global:
+  clusterDomain: cluster.example.com
+  clusterPlatform: AWS
+
+# Cluster names. Override via extraValueFiles (e.g. /overrides/values-cluster-names.yaml).
+regionalDR:
+  - name: resilient
+    globalnetEnabled: false
+    clusters:
+      primary:
+        name: ocp-primary
+      secondary:
+        name: ocp-secondary
+
+ansible:
+  containerImage: quay.io/validatedpatterns/utility-container:latest
+  verbosity: 0
+
+submariner:
+  instanceType: m5.xlarge
+  ipsecNatPort: 4500
+  NATTEnable: true
+  cableDriver: vxlan
+  # EC2 security group tagging job (AWS only; requires global.clusterPlatform AWS).
+  sgTagJobEnabled: false
+
+# Post-sync job odf-ramen-trusted-ca: CA from hub cluster-proxy-ca-bundle;
+# waits for Ramen s3StoreProfiles.
+odfRamenTrustedCa:
+  ramenS3WaitSeconds: 3600
+  trustedCaWaitSeconds: 3600
+  pollInterval: 15
