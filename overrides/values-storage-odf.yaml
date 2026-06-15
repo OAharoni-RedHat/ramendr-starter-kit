@@ -1,16 +1,22 @@
 ---
 # ODF/Ceph storage overlay.
-# Applied by `make install-odf`, which extracts the hub and resilient sections
-# and merges each into the corresponding values file before running the install.
+# Applied by `make install-odf`, which extracts each section and merges it into
+# the corresponding values file before running the install.
+#
+# Sections:
+#   hub        → merged into values-hub.yaml
+#   resilient  → merged into values-resilient.yaml
+#   egvDr      → merged into overrides/values-egv-dr.yaml
+#   consolePluginsHub    → appended to overrides/values-console-plugins-hub.yaml
+#   consolePluginsSpokes → appended to overrides/values-console-plugins-spokes.yaml
 #
 # To add a future storage provider (e.g. Dell), create overrides/values-storage-dell.yaml
-# with the same hub/resilient structure and add an install-dell target to the Makefile.
+# with the same structure and add an install-dell target to the Makefile.
 
 hub:
   clusterGroup:
     namespaces:
       - openshift-storage
-      - openshift-dr-system
 
     subscriptions:
       odf-multicluster-orchestrator:
@@ -73,6 +79,21 @@ hub:
           - CreateNamespace=true
         extraValueFiles:
           - '$patternref/overrides/values-odf-chart.yaml'
+
+# VM storage class for edge-gitops-vms — merged into overrides/values-egv-dr.yaml
+egvDr:
+  vmDefaults:
+    storageClassName: "ocs-storagecluster-ceph-rbd-virtualization"
+
+# Console plugins — appended to the base plugin lists
+consolePluginsHub:
+  ensureConsolePlugins:
+    - odf-console
+    - odf-multicluster-console
+
+consolePluginsSpokes:
+  ensureConsolePlugins:
+    - odf-console
 
 resilient:
   clusterGroup:

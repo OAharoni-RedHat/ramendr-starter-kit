@@ -1,0 +1,130 @@
+---
+# ODF SSL certificate precheck. Ensures certificates are distributed before DR policies.
+# Requires: kubernetes.core. Env: PRIMARY_CLUSTER, SECONDARY_CLUSTER.
+- name: ODF SSL certificate precheck
+  hosts: localhost
+  gather_facts: true
+  vars:
+    primary_cluster: "{{ lookup('env', 'PRIMARY_CLUSTER') | default('ocp-primary', true) }}"
+    secondary_cluster: "{{ lookup('env', 'SECONDARY_CLUSTER') | default('ocp-secondary', true) }}"
+    min_certificates: "{{ lookup('env', 'MIN_CA_CERTIFICATES') | default(6, true) | int }}"
+    min_bundle_size: "{{ lookup('env', 'MIN_CA_BUNDLE_BYTES') | default(4096, true) | int }}"
+    max_attempts: 120
+    sleep_interval: 30
+    cluster_readiness_max_attempts: 150
+    cluster_readiness_sleep: 30
+    bundle_wait_retries: "{{ lookup('env', 'BUNDLE_WAIT_RETRIES') | default(60, true) | int }}"
+    bundle_wait_delay: "{{ lookup('env', 'BUNDLE_WAIT_DELAY_SECONDS') | default(30, true) | int }}"
+    kubeconfig: "{{ lookup('env', 'KUBECONFIG') | default('', true) | trim }}"
+  tasks:
+    - name: Wait for required ManagedClusters on hub (excl. local-cluster, min 2)
+      kubernetes.core.k8s_info:
+        api_version: cluster.open-cluster-management.io/v1
+        kind: ManagedCluster
+      register: mc_wait
+      until: >-
+        (mc_wait.resources | default([])
+        | map(attribute='metadata.name')
+        | reject('equalto', 'local-cluster')
+        | list
+        | length | int) >= 2
+      retries: "{{ cluster_readiness_max_attempts | int }}"
+      delay: "{{ cluster_readiness_sleep | int }}"
+
+    - name: Set clusters ready after wait
+      ansible.builtin.set_fact:
+        clusters_ready: true
+
+    - name: Probe hub cluster-proxy-ca-bundle before wait
+      kubernetes.core.k8s_info:
+        kind: ConfigMap
+        name: cluster-proxy-ca-bundle
+        namespace: openshift-config
+      register: hub_cm_probe
+      failed_when: false
+
+    - name: Delete empty hub cluster-proxy-ca-bundle (blocks extractor create/patch)
+      kubernetes.core.k8s:
+        state: absent
+        kind: ConfigMap
+        name: cluster-proxy-ca-bundle
+        namespace: openshift-config
+      when: >-
+        hub_cm_probe.resources | default([]) | length > 0
+        and (
+          (hub_cm_probe.resources[0].data | default({})).get('ca-bundle.crt', '') | default('', true) | trim | length
+        ) == 0
+      failed_when: false
+
+    - name: Wait for hub cluster-proxy-ca-bundle after extractor Job (wave 1)
+      kubernetes.core.k8s_info:
+        kind: ConfigMap
+        name: cluster-proxy-ca-bundle
+        namespace: openshift-config
+      register: hub_cm_poll
+      until: >-
+        hub_cm_poll.resources | default([]) | length > 0
+        and (
+          (hub_cm_poll.resources[0].data | default({})).get('ca-bundle.crt', '') | default('', true) | length | int
+        ) >= (min_bundle_size | int)
+        and (
+          (hub_cm_poll.resources[0].data | default({})).get('ca-bundle.crt', '') | default('', true)
+          | regex_findall('-----BEGIN CERTIFICATE-----')
+          | length | int
+        ) >= (min_certificates | int)
+      retries: "{{ bundle_wait_retries | int }}"
+      delay: "{{ bundle_wait_delay | int }}"
+      failed_when: false
+
+    - name: Check certificate distribution on hub
+      block:
+        - name: Get cluster-proxy-ca-bundle ConfigMap
+          kubernetes.core.k8s_info:
+            kind: ConfigMap
+            name: cluster-proxy-ca-bundle
+            namespace: openshift-config
+          register: ca_bundle_cm
+
+        - name: Fail when CA bundle ConfigMap not found
+          ansible.builtin.fail:
+            msg: "CA bundle ConfigMap not found on hub cluster."
+          when: ca_bundle_cm.resources | length == 0
+
+        - name: Set bundle content and size
+          ansible.builtin.set_fact:
+            bundle_content: "{{ (ca_bundle_cm.resources[0].data | default({})).get('ca-bundle.crt', '') }}"
+            bundle_size: "{{ ((ca_bundle_cm.resources[0].data | default({})).get('ca-bundle.crt', '') | length) }}"
+          when: ca_bundle_cm.resources | length > 0
+
+        - name: Fail when CA bundle too small
+          ansible.builtin.fail:
+            msg: "CA bundle too small ({{ bundle_size | int }} < {{ min_bundle_size | int }} bytes)."
+          when: bundle_size | default(0) | int < min_bundle_size | int
+
+        - name: Count certificates in bundle
+          ansible.builtin.set_fact:
+            cert_count: "{{ bundle_content | default('') | regex_findall('-----BEGIN CERTIFICATE-----') | length | int }}"
+
+        - name: Fail when too few certificates
+          ansible.builtin.fail:
+            msg: "Too few certificates in bundle ({{ cert_count }} < {{ min_certificates | int }})."
+          when: cert_count | default(0) | int < min_certificates | int
+
+        - name: Set certificate distribution complete
+          ansible.builtin.set_fact:
+            certificate_distribution_ok: true
+      rescue:
+        - name: Set certificate distribution incomplete
+          ansible.builtin.set_fact:
+            certificate_distribution_ok: false
+
+    - name: Fail when certificate distribution still incomplete
+      ansible.builtin.fail:
+        msg: >-
+          Hub cluster-proxy-ca-bundle still below thresholds.
+          Thresholds: MIN_CA_BUNDLE_BYTES={{ min_bundle_size | int }}, MIN_CA_CERTIFICATES={{ min_certificates | int }}.
+      when: not (certificate_distribution_ok | default(false) | bool)
+
+    - name: Precheck success
+      ansible.builtin.debug:
+        msg: "ODF SSL certificate precheck completed successfully. Ready for DR prerequisites check."
