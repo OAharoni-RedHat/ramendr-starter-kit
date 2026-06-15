@@ -18,6 +18,14 @@ hub:
     namespaces:
       - openshift-storage
 
+    # Append values-rdr-storage-odf.yaml to the rdr app so the chart uses the ODF
+    # post-install automation path (MirrorPeer + prereqs jobs) rather than creating
+    # DRCluster CRs directly, which requires manual S3 profile names.
+    applications:
+      rdr:
+        extraValueFiles:
+          - '$patternref/overrides/values-rdr-storage-odf.yaml'
+
     subscriptions:
       odf-multicluster-orchestrator:
         name: odf-multicluster-orchestrator

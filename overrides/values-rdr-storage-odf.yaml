@@ -1,0 +1,7 @@
+---
+# Passed as extraValueFiles to the rdr (regional-dr) Argo CD app when deploying
+# with ODF/Ceph storage.  Tells the regionaldr-with-virt chart to use the ODF
+# post-install automation path (MirrorPeer + prerequisites jobs) rather than
+# creating DRCluster CRs directly.
+odf:
+  postInstallFixesEnabled: true
