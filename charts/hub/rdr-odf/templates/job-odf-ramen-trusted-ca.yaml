@@ -45,6 +45,15 @@ spec:
         - /bin/bash
         - -c
         - |
+            # Unpack the regionaldr-ansible ConfigMap (__ → /) into a temp stage dir
+            STAGE=$(mktemp -d)
+            for f in /ansible-cm/*; do
+              key=$(basename "$f")
+              rel="${key//__//}"
+              mkdir -p "$STAGE/$(dirname "$rel")"
+              cp "$f" "$STAGE/$rel"
+            done
+            cd "$STAGE"
             ansible-playbook -i inventory/hosts playbooks/odf_ramen_trusted_ca.yml \
               -e "odf_ramen_s3_wait_seconds=${RAMEN_CM_WAIT_SECONDS:-3600}" \
               -e "odf_ramen_trusted_ca_wait_seconds=${TRUSTED_CA_WAIT_SECONDS:-3600}" \

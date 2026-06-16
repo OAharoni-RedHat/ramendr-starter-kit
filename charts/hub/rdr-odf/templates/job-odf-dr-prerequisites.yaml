@@ -26,9 +26,17 @@ spec:
         - /bin/bash
         - -c
         - |
-            export PRIMARY_CLUSTER SECONDARY_CLUSTER
+            # Unpack the regionaldr-ansible ConfigMap (__ → /) into a temp stage dir
+            STAGE=$(mktemp -d)
+            for f in /ansible-cm/*; do
+              key=$(basename "$f")
+              rel="${key//__//}"
+              mkdir -p "$STAGE/$(dirname "$rel")"
+              cp "$f" "$STAGE/$rel"
+            done
+            export PRIMARY_CLUSTER SECONDARY_CLUSTER STAGE
             ODF_SCRIPT="$STAGE/roles/odf_dr_prerequisites/files/odf-dr-prerequisites-check.sh"
-            echo "Running ODF prerequisites script."
+            echo "Running ODF prerequisites script (STAGE=$STAGE)."
             exec bash "$ODF_SCRIPT"
         volumeMounts:
         - name: ansible

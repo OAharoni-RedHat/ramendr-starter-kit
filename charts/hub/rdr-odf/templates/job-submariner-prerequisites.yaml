@@ -28,9 +28,17 @@ spec:
         - /bin/bash
         - -c
         - |
-            export PRIMARY_CLUSTER SECONDARY_CLUSTER SUBMARINER_BROKER_NAMESPACE
+            # Unpack the regionaldr-ansible ConfigMap (__ → /) into a temp stage dir
+            STAGE=$(mktemp -d)
+            for f in /ansible-cm/*; do
+              key=$(basename "$f")
+              rel="${key//__//}"
+              mkdir -p "$STAGE/$(dirname "$rel")"
+              cp "$f" "$STAGE/$rel"
+            done
+            export PRIMARY_CLUSTER SECONDARY_CLUSTER SUBMARINER_BROKER_NAMESPACE STAGE
             SUB_SCRIPT="$STAGE/roles/submariner_prerequisites/files/submariner-prerequisites-check.sh"
-            echo "Running Submariner prerequisites script."
+            echo "Running Submariner prerequisites script (STAGE=$STAGE)."
             exec bash "$SUB_SCRIPT"
         volumeMounts:
         - name: ansible
