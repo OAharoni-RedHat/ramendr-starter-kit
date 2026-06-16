@@ -13,44 +13,21 @@ ramen-prereq: ## Check if values.byoc false do nothing, else run the precheck ag
 
 # Storage provider targets
 # The base pattern (make install) deploys without any storage-provider-specific
-# components.  Use one of the targets below to merge a storage overlay before
+# components.  Use one of the targets below to apply a storage overlay before
 # installing.  The merged values files should be committed and pushed to git
 # so the Validated Patterns operator can reconcile them.
 
 .PHONY: apply-storage-odf
-apply-storage-odf: ## Merge ODF/Ceph overlay into values files (idempotent — skips if already applied)
-	@command -v yq >/dev/null 2>&1 || { echo "ERROR: yq is required. Install from https://github.com/mikefarah/yq"; exit 1; }
-	@if yq '.clusterGroup.subscriptions | has("odf-multicluster-orchestrator")' values-hub.yaml | grep -q "true"; then \
-		echo "ODF overlay already applied. To reset: git checkout values-hub.yaml values-resilient.yaml overrides/values-egv-dr.yaml overrides/values-console-plugins-*.yaml"; \
-		exit 0; \
-	fi
-	@echo "Merging ODF overlay into values-hub.yaml..."
-	@yq '.hub' overrides/values-storage-odf.yaml | \
-		yq eval-all '. as $$item ireduce ({}; . *+ $$item)' values-hub.yaml - > /tmp/_values-hub-merged.yaml \
-		&& mv /tmp/_values-hub-merged.yaml values-hub.yaml
-	@echo "Merging ODF overlay into values-resilient.yaml..."
-	@yq '.resilient' overrides/values-storage-odf.yaml | \
-		yq eval-all '. as $$item ireduce ({}; . *+ $$item)' values-resilient.yaml - > /tmp/_values-resilient-merged.yaml \
-		&& mv /tmp/_values-resilient-merged.yaml values-resilient.yaml
-	@echo "Merging ODF storageClassName into overrides/values-egv-dr.yaml..."
-	@yq '.egvDr' overrides/values-storage-odf.yaml | \
-		yq eval-all '. as $$item ireduce ({}; . *+ $$item)' overrides/values-egv-dr.yaml - > /tmp/_values-egvdr-merged.yaml \
-		&& mv /tmp/_values-egvdr-merged.yaml overrides/values-egv-dr.yaml
-	@echo "Appending ODF console plugins to hub plugin list..."
-	@yq '.consolePluginsHub' overrides/values-storage-odf.yaml | \
-		yq eval-all '. as $$item ireduce ({}; . *+ $$item)' overrides/values-console-plugins-hub.yaml - > /tmp/_plugins-hub-merged.yaml \
-		&& mv /tmp/_plugins-hub-merged.yaml overrides/values-console-plugins-hub.yaml
-	@echo "Appending ODF console plugins to spoke plugin list..."
-	@yq '.consolePluginsSpokes' overrides/values-storage-odf.yaml | \
-		yq eval-all '. as $$item ireduce ({}; . *+ $$item)' overrides/values-console-plugins-spokes.yaml - > /tmp/_plugins-spokes-merged.yaml \
-		&& mv /tmp/_plugins-spokes-merged.yaml overrides/values-console-plugins-spokes.yaml
-	@echo "ODF overlay applied. Review changes, commit, then run 'make install'."
+apply-storage-odf: ## Apply ODF/Ceph storage overlay (idempotent — skips if already applied)
+	cd ansible && ansible-playbook -i localhost, -c local $(EXTRA_ARGS) $(EXTRA_VARS) \
+		playbooks/apply_storage_overlay.yml \
+		-e "pattern_dir=$(CURDIR)"
 
 .PHONY: install-odf
-install-odf: apply-storage-odf install ## Merge ODF/Ceph storage overlay and install the pattern
+install-odf: apply-storage-odf install ## Apply ODF/Ceph storage overlay and install the pattern
 
 .PHONY: install-dell
-install-dell: ## [STUB] Merge Dell storage overlay and install the pattern
+install-dell: ## [STUB] Apply Dell storage overlay and install the pattern
 	@echo "Dell storage overlay not yet implemented."
 	@echo "Create overrides/values-storage-dell.yaml with hub/resilient/egvDr/consolePluginsHub/consolePluginsSpokes"
 	@echo "sections (same structure as overrides/values-storage-odf.yaml), then add an apply-storage-dell target."

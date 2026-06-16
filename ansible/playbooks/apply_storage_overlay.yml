@@ -1,0 +1,316 @@
+---
+# Apply a storage provider overlay to the pattern values files.
+# Idempotent: exits cleanly if the overlay is already applied.
+#
+# Usage (via Makefile):
+#   make apply-storage-odf          # ODF/Ceph storage
+#   make apply-storage-dell         # Dell (once implemented)
+#
+# Or directly:
+#   ansible-playbook -i localhost, -c local playbooks/apply_storage_overlay.yml \
+#     -e "pattern_dir=/path/to/repo"
+#
+# To reset: git checkout values-hub.yaml values-resilient.yaml \
+#   overrides/values-egv-dr.yaml overrides/values-console-plugins-*.yaml
+
+- name: Apply storage overlay to pattern values files
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    # Resolved to the repo root by the Makefile; fallback for direct invocation
+    pattern_dir: "{{ pattern_dir | default(playbook_dir + '/../..') }}"
+    overlay_file: "{{ pattern_dir }}/overrides/values-storage-odf.yaml"
+    values_hub_file: "{{ pattern_dir }}/values-hub.yaml"
+    values_resilient_file: "{{ pattern_dir }}/values-resilient.yaml"
+    egv_dr_file: "{{ pattern_dir }}/overrides/values-egv-dr.yaml"
+    plugins_hub_file: "{{ pattern_dir }}/overrides/values-console-plugins-hub.yaml"
+    plugins_spokes_file: "{{ pattern_dir }}/overrides/values-console-plugins-spokes.yaml"
+
+  tasks:
+    # ── Load all files ──────────────────────────────────────────────────────
+    - name: Load storage overlay
+      ansible.builtin.include_vars:
+        file: "{{ overlay_file }}"
+        name: overlay
+
+    - name: Load values-hub.yaml
+      ansible.builtin.include_vars:
+        file: "{{ values_hub_file }}"
+        name: hub_values
+
+    - name: Load values-resilient.yaml
+      ansible.builtin.include_vars:
+        file: "{{ values_resilient_file }}"
+        name: resilient_values
+
+    - name: Load overrides/values-egv-dr.yaml
+      ansible.builtin.include_vars:
+        file: "{{ egv_dr_file }}"
+        name: egv_dr_values
+
+    - name: Load overrides/values-console-plugins-hub.yaml
+      ansible.builtin.include_vars:
+        file: "{{ plugins_hub_file }}"
+        name: plugins_hub_values
+
+    - name: Load overrides/values-console-plugins-spokes.yaml
+      ansible.builtin.include_vars:
+        file: "{{ plugins_spokes_file }}"
+        name: plugins_spokes_values
+
+    # ── Idempotency guard ───────────────────────────────────────────────────
+    - name: Check whether the overlay is already applied
+      ansible.builtin.set_fact:
+        odf_already_applied: >-
+          {{ 'odf-multicluster-orchestrator' in (hub_values.clusterGroup.subscriptions | default({})) }}
+
+    - name: Exit early — overlay already applied
+      when: odf_already_applied | bool
+      block:
+        - name: Print idempotency message
+          ansible.builtin.debug:
+            msg: >-
+              Storage overlay is already applied to this repo. No changes made.
+              To reset: git checkout values-hub.yaml values-resilient.yaml
+              overrides/values-egv-dr.yaml overrides/values-console-plugins-hub.yaml
+              overrides/values-console-plugins-spokes.yaml
+        - name: End play
+          ansible.builtin.meta: end_play
+
+    # ── HUB: namespaces (deduplicated) ─────────────────────────────────────
+    - name: "HUB | Collect existing namespace names"
+      ansible.builtin.set_fact:
+        hub_ns_names: >-
+          {%- set names = [] -%}
+          {%- for ns in hub_values.clusterGroup.namespaces | default([]) -%}
+            {%- if ns is string -%}{%- set _ = names.append(ns) -%}
+            {%- elif ns is mapping -%}{%- set _ = names.append(ns.keys() | list | first) -%}
+            {%- endif -%}
+          {%- endfor -%}
+          {{ names }}
+
+    - name: "HUB | Append ODF namespaces (skip if already present)"
+      ansible.builtin.set_fact:
+        hub_namespaces_merged: >-
+          {%- set result = hub_values.clusterGroup.namespaces | list -%}
+          {%- for ns in overlay.hub.clusterGroup.namespaces | default([]) -%}
+            {%- set ns_name = ns if ns is string else ns.keys() | list | first -%}
+            {%- if ns_name not in hub_ns_names -%}{%- set _ = result.append(ns) -%}{%- endif -%}
+          {%- endfor -%}
+          {{ result }}
+
+    # ── HUB: subscriptions (map — combine merges cleanly) ──────────────────
+    - name: "HUB | Merge subscriptions"
+      ansible.builtin.set_fact:
+        hub_subscriptions_merged: >-
+          {{
+            hub_values.clusterGroup.subscriptions | default({})
+            | combine(overlay.hub.clusterGroup.subscriptions | default({}))
+          }}
+
+    # ── HUB: applications ──────────────────────────────────────────────────
+    # For the existing rdr app: only append to its extraValueFiles list.
+    # For new apps (opp-odf, rdr-odf, odf): add them wholesale.
+    - name: "HUB | Append new extraValueFiles to existing rdr app"
+      ansible.builtin.set_fact:
+        rdr_extra_files_merged: >-
+          {{
+            hub_values.clusterGroup.applications.rdr.extraValueFiles | default([])
+            + (
+                overlay.hub.clusterGroup.applications.rdr.extraValueFiles | default([])
+                | difference(hub_values.clusterGroup.applications.rdr.extraValueFiles | default([]))
+              )
+          }}
+
+    - name: "HUB | Build updated rdr app entry"
+      ansible.builtin.set_fact:
+        rdr_app_updated: >-
+          {{
+            hub_values.clusterGroup.applications.rdr
+            | combine({'extraValueFiles': rdr_extra_files_merged})
+          }}
+
+    - name: "HUB | Add new ODF applications and update rdr"
+      ansible.builtin.set_fact:
+        hub_applications_merged: >-
+          {{
+            hub_values.clusterGroup.applications
+            | combine({'rdr': rdr_app_updated})
+            | combine(
+                overlay.hub.clusterGroup.applications
+                | dict2items
+                | rejectattr('key', 'equalto', 'rdr')
+                | list
+                | items2dict
+              )
+          }}
+
+    # ── HUB: write merged file ─────────────────────────────────────────────
+    - name: "HUB | Assemble merged clusterGroup"
+      ansible.builtin.set_fact:
+        hub_clustergroup_merged: >-
+          {{
+            hub_values.clusterGroup
+            | combine({
+                'namespaces': hub_namespaces_merged,
+                'subscriptions': hub_subscriptions_merged,
+                'applications': hub_applications_merged
+              })
+          }}
+
+    - name: "HUB | Write values-hub.yaml"
+      ansible.builtin.copy:
+        dest: "{{ values_hub_file }}"
+        content: "---\n{{ {'clusterGroup': hub_clustergroup_merged} | to_nice_yaml(indent=2) }}"
+        mode: "0644"
+
+    # ── RESILIENT: namespaces (deduplicated) ────────────────────────────────
+    - name: "RESILIENT | Collect existing namespace names"
+      ansible.builtin.set_fact:
+        resilient_ns_names: >-
+          {%- set names = [] -%}
+          {%- for ns in resilient_values.clusterGroup.namespaces | default([]) -%}
+            {%- if ns is string -%}{%- set _ = names.append(ns) -%}
+            {%- elif ns is mapping -%}{%- set _ = names.append(ns.keys() | list | first) -%}
+            {%- endif -%}
+          {%- endfor -%}
+          {{ names }}
+
+    - name: "RESILIENT | Append ODF namespaces (skip if already present)"
+      ansible.builtin.set_fact:
+        resilient_namespaces_merged: >-
+          {%- set result = resilient_values.clusterGroup.namespaces | list -%}
+          {%- for ns in overlay.resilient.clusterGroup.namespaces | default([]) -%}
+            {%- set ns_name = ns if ns is string else ns.keys() | list | first -%}
+            {%- if ns_name not in resilient_ns_names -%}{%- set _ = result.append(ns) -%}{%- endif -%}
+          {%- endfor -%}
+          {{ result }}
+
+    # ── RESILIENT: subscriptions ────────────────────────────────────────────
+    - name: "RESILIENT | Merge subscriptions"
+      ansible.builtin.set_fact:
+        resilient_subscriptions_merged: >-
+          {{
+            resilient_values.clusterGroup.subscriptions | default({})
+            | combine(overlay.resilient.clusterGroup.subscriptions | default({}))
+          }}
+
+    # ── RESILIENT: applications ─────────────────────────────────────────────
+    - name: "RESILIENT | Add new ODF applications"
+      ansible.builtin.set_fact:
+        resilient_applications_merged: >-
+          {{
+            resilient_values.clusterGroup.applications
+            | combine(overlay.resilient.clusterGroup.applications | default({}))
+          }}
+
+    # ── RESILIENT: imperative jobs (deduplicated by name) ───────────────────
+    - name: "RESILIENT | Append ODF imperative jobs (skip if already present)"
+      ansible.builtin.set_fact:
+        resilient_imperative_jobs_merged: >-
+          {%- set existing = resilient_values.clusterGroup.imperative.jobs | default([]) | map(attribute='name') | list -%}
+          {%- set result = resilient_values.clusterGroup.imperative.jobs | default([]) | list -%}
+          {%- for job in overlay.resilient.clusterGroup.imperative.jobs | default([]) -%}
+            {%- if job.name not in existing -%}{%- set _ = result.append(job) -%}{%- endif -%}
+          {%- endfor -%}
+          {{ result }}
+
+    - name: "RESILIENT | Merge clusterRoleYaml"
+      ansible.builtin.set_fact:
+        resilient_crrole_merged: >-
+          {{
+            resilient_values.clusterGroup.imperative.clusterRoleYaml | default([])
+            + overlay.resilient.clusterGroup.imperative.clusterRoleYaml | default([])
+          }}
+
+    - name: "RESILIENT | Assemble merged imperative section"
+      ansible.builtin.set_fact:
+        resilient_imperative_merged: >-
+          {{
+            resilient_values.clusterGroup.imperative | default({})
+            | combine({
+                'jobs': resilient_imperative_jobs_merged,
+                'clusterRoleYaml': resilient_crrole_merged
+              })
+          }}
+
+    # ── RESILIENT: write merged file ────────────────────────────────────────
+    - name: "RESILIENT | Assemble merged clusterGroup"
+      ansible.builtin.set_fact:
+        resilient_clustergroup_merged: >-
+          {{
+            resilient_values.clusterGroup
+            | combine({
+                'namespaces': resilient_namespaces_merged,
+                'subscriptions': resilient_subscriptions_merged,
+                'applications': resilient_applications_merged,
+                'imperative': resilient_imperative_merged
+              })
+          }}
+
+    - name: "RESILIENT | Write values-resilient.yaml"
+      ansible.builtin.copy:
+        dest: "{{ values_resilient_file }}"
+        content: "---\n{{ {'clusterGroup': resilient_clustergroup_merged} | to_nice_yaml(indent=2) }}"
+        mode: "0644"
+
+    # ── values-egv-dr.yaml: storageClassName ───────────────────────────────
+    - name: "EGV-DR | Merge storageClassName"
+      ansible.builtin.set_fact:
+        egv_dr_merged: >-
+          {{
+            egv_dr_values
+            | combine({'vmDefaults': egv_dr_values.vmDefaults | combine(overlay.egvDr.vmDefaults)}, recursive=True)
+          }}
+
+    - name: "EGV-DR | Write overrides/values-egv-dr.yaml"
+      ansible.builtin.copy:
+        dest: "{{ egv_dr_file }}"
+        content: "---\n{{ egv_dr_merged | to_nice_yaml(indent=2) }}"
+        mode: "0644"
+
+    # ── Console plugins (deduplicated) ─────────────────────────────────────
+    - name: "PLUGINS | Merge hub plugin list"
+      ansible.builtin.set_fact:
+        plugins_hub_merged:
+          ensureConsolePlugins: >-
+            {{
+              plugins_hub_values.ensureConsolePlugins
+              + (
+                  overlay.consolePluginsHub.ensureConsolePlugins
+                  | difference(plugins_hub_values.ensureConsolePlugins)
+                )
+            }}
+
+    - name: "PLUGINS | Merge spokes plugin list"
+      ansible.builtin.set_fact:
+        plugins_spokes_merged:
+          ensureConsolePlugins: >-
+            {{
+              plugins_spokes_values.ensureConsolePlugins
+              + (
+                  overlay.consolePluginsSpokes.ensureConsolePlugins
+                  | difference(plugins_spokes_values.ensureConsolePlugins)
+                )
+            }}
+
+    - name: "PLUGINS | Write overrides/values-console-plugins-hub.yaml"
+      ansible.builtin.copy:
+        dest: "{{ plugins_hub_file }}"
+        content: "---\n{{ plugins_hub_merged | to_nice_yaml(indent=2) }}"
+        mode: "0644"
+
+    - name: "PLUGINS | Write overrides/values-console-plugins-spokes.yaml"
+      ansible.builtin.copy:
+        dest: "{{ plugins_spokes_file }}"
+        content: "---\n{{ plugins_spokes_merged | to_nice_yaml(indent=2) }}"
+        mode: "0644"
+
+    # ── Done ────────────────────────────────────────────────────────────────
+    - name: Storage overlay applied successfully
+      ansible.builtin.debug:
+        msg:
+          - "ODF storage overlay applied successfully."
+          - "Review changes with 'git diff', commit, then run 'make install'."
