@@ -2,15 +2,17 @@
 clusterGroup:
   name: hub
   isHubCluster: true
+  # Namespaces as a dictionary — keys are namespace names, enabling clean
+  # map-merge from storage overlay files without list duplication issues.
   namespaces:
-    - open-cluster-management
-    - open-cluster-management-observability
-    - vault
-    - golang-external-secrets
-    - regional-dr
-    - openshift-dr-system
-    - openshift-dr-ops
-    - policies
+    open-cluster-management:
+    open-cluster-management-observability:
+    vault:
+    golang-external-secrets:
+    regional-dr:
+    openshift-dr-system:
+    openshift-dr-ops:
+    policies:
   subscriptions:
     acm:
       name: advanced-cluster-management

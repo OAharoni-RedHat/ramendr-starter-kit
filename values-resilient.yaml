@@ -6,15 +6,17 @@ clusterGroup:
   argoCD:
     resourceTrackingMethod: annotation
 
+  # Namespaces as a dictionary — keys are namespace names, enabling clean
+  # map-merge from storage overlay files without list duplication issues.
   namespaces:
-    - golang-external-secrets
-    - openshift-cnv
-    - policies
-    - gitops-vms
-    - external-dns-operator
-    - openshift-workload-availability:
-        operatorGroup: true
-        targetNamespaces:
+    golang-external-secrets:
+    openshift-cnv:
+    policies:
+    gitops-vms:
+    external-dns-operator:
+    openshift-workload-availability:
+      operatorGroup: true
+      targetNamespaces:
 
   subscriptions:
     openshift-virtualization:

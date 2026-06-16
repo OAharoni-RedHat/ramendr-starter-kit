@@ -79,27 +79,14 @@
         - name: End play
           ansible.builtin.meta: end_play
 
-    # ── HUB: namespaces (deduplicated) ─────────────────────────────────────
-    - name: "HUB | Collect existing namespace names"
-      ansible.builtin.set_fact:
-        hub_ns_names: >-
-          {%- set names = [] -%}
-          {%- for ns in hub_values.clusterGroup.namespaces | default([]) -%}
-            {%- if ns is string -%}{%- set _ = names.append(ns) -%}
-            {%- elif ns is mapping -%}{%- set _ = names.append(ns.keys() | list | first) -%}
-            {%- endif -%}
-          {%- endfor -%}
-          {{ names }}
-
-    - name: "HUB | Append ODF namespaces (skip if already present)"
+    # ── HUB: namespaces (dict — combine merges cleanly, keys are unique) ──────
+    - name: "HUB | Merge namespaces (dict combine — no duplication possible)"
       ansible.builtin.set_fact:
         hub_namespaces_merged: >-
-          {%- set result = hub_values.clusterGroup.namespaces | list -%}
-          {%- for ns in overlay.hub.clusterGroup.namespaces | default([]) -%}
-            {%- set ns_name = ns if ns is string else ns.keys() | list | first -%}
-            {%- if ns_name not in hub_ns_names -%}{%- set _ = result.append(ns) -%}{%- endif -%}
-          {%- endfor -%}
-          {{ result }}
+          {{
+            hub_values.clusterGroup.namespaces | default({})
+            | combine(overlay.hub.clusterGroup.namespaces | default({}))
+          }}
 
     # ── HUB: subscriptions (map — combine merges cleanly) ──────────────────
     - name: "HUB | Merge subscriptions"
@@ -166,27 +153,14 @@
         content: "---\n{{ {'clusterGroup': hub_clustergroup_merged} | to_nice_yaml(indent=2) }}"
         mode: "0644"
 
-    # ── RESILIENT: namespaces (deduplicated) ────────────────────────────────
-    - name: "RESILIENT | Collect existing namespace names"
-      ansible.builtin.set_fact:
-        resilient_ns_names: >-
-          {%- set names = [] -%}
-          {%- for ns in resilient_values.clusterGroup.namespaces | default([]) -%}
-            {%- if ns is string -%}{%- set _ = names.append(ns) -%}
-            {%- elif ns is mapping -%}{%- set _ = names.append(ns.keys() | list | first) -%}
-            {%- endif -%}
-          {%- endfor -%}
-          {{ names }}
-
-    - name: "RESILIENT | Append ODF namespaces (skip if already present)"
+    # ── RESILIENT: namespaces (dict — combine merges cleanly) ──────────────
+    - name: "RESILIENT | Merge namespaces (dict combine — no duplication possible)"
       ansible.builtin.set_fact:
         resilient_namespaces_merged: >-
-          {%- set result = resilient_values.clusterGroup.namespaces | list -%}
-          {%- for ns in overlay.resilient.clusterGroup.namespaces | default([]) -%}
-            {%- set ns_name = ns if ns is string else ns.keys() | list | first -%}
-            {%- if ns_name not in resilient_ns_names -%}{%- set _ = result.append(ns) -%}{%- endif -%}
-          {%- endfor -%}
-          {{ result }}
+          {{
+            resilient_values.clusterGroup.namespaces | default({})
+            | combine(overlay.resilient.clusterGroup.namespaces | default({}))
+          }}
 
     # ── RESILIENT: subscriptions ────────────────────────────────────────────
     - name: "RESILIENT | Merge subscriptions"

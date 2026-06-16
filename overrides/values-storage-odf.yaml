@@ -16,7 +16,7 @@
 hub:
   clusterGroup:
     namespaces:
-      - openshift-storage
+      openshift-storage:
 
     # Append values-rdr-storage-odf.yaml to the rdr app so the chart uses the ODF
     # post-install automation path (MirrorPeer + prereqs jobs) rather than creating
@@ -106,11 +106,11 @@ consolePluginsSpokes:
 resilient:
   clusterGroup:
     namespaces:
-      - openshift-storage
-      - openshift-adp:
-          operatorGroup: true
-          targetNamespaces:
-            - openshift-adp
+      openshift-storage:
+      openshift-adp:
+        operatorGroup: true
+        targetNamespaces:
+          - openshift-adp
 
     subscriptions:
       openshift-data-foundation:
