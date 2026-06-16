@@ -1,4 +1,35 @@
----\nclusterGroup:
+---
+clusterGroup:
+  name: hub
+  isHubCluster: true
+  namespaces:
+    open-cluster-management:
+    open-cluster-management-observability:
+    vault:
+    golang-external-secrets:
+    regional-dr:
+    openshift-dr-system:
+    openshift-dr-ops:
+    policies:
+    openshift-storage:
+  projects:
+  - hub
+  - opp
+  sharedValueFiles:
+  - /overrides/values-{{ $.Values.global.clusterPlatform }}.yaml
+  argoCD:
+    resourceTrackingMethod: annotation
+  subscriptions:
+    acm:
+      channel: release-2.15
+      name: advanced-cluster-management
+      namespace: open-cluster-management
+    odf-multicluster-orchestrator:
+      name: odf-multicluster-orchestrator
+      namespace: openshift-operators
+    openshift-data-foundation:
+      name: odf-operator
+      namespace: openshift-storage
   applications:
     acm:
       chart: acm
@@ -23,36 +54,6 @@
       name: golang-external-secrets
       namespace: golang-external-secrets
       project: hub
-    odf:
-      chart: openshift-data-foundations
-      chartVersion: 0.2.*
-      extraValueFiles:
-      - $patternref/overrides/values-odf-chart.yaml
-      name: odf
-      namespace: openshift-storage
-      project: opp
-      syncOptions:
-      - CreateNamespace=true
-    opp-odf:
-      annotations:
-        argocd.argoproj.io/sync-wave: '6'
-      extraValueFiles:
-      - /overrides/values-cluster-names.yaml
-      name: opp-odf
-      namespace: openshift
-      path: charts/hub/opp-odf
-      project: opp
-      syncPolicy:
-        automated: {}
-        retry:
-          backoff:
-            duration: 5s
-            factor: 2
-            maxDuration: 3m
-          limit: 20
-        syncOptions:
-        - CreateNamespace=true
-        - ServerSideApply=true
     opp-policy:
       annotations:
         argocd.argoproj.io/sync-wave: '5'
@@ -83,6 +84,26 @@
         - PrunePropagationPolicy=foreground
         - RespectIgnoreDifferences=true
         - ServerSideApply=true
+    opp-odf:
+      annotations:
+        argocd.argoproj.io/sync-wave: '6'
+      extraValueFiles:
+      - /overrides/values-cluster-names.yaml
+      name: opp-odf
+      namespace: openshift
+      path: charts/hub/opp-odf
+      project: opp
+      syncPolicy:
+        automated: {}
+        retry:
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m
+          limit: 20
+        syncOptions:
+        - CreateNamespace=true
+        - ServerSideApply=true
     rdr:
       annotations:
         argocd.argoproj.io/sync-wave: '10'
@@ -90,6 +111,7 @@
       extraValueFiles:
       - /overrides/values-cluster-names.yaml
       - /overrides/values-egv-dr.yaml
+      - $patternref/overrides/values-rdr-storage-odf.yaml
       ignoreDifferences:
       - group: internal.open-cluster-management.io
         kind: ManagedClusterInfo
@@ -127,18 +149,25 @@
           limit: 60
         syncOptions:
         - RespectIgnoreDifferences=true
+    odf:
+      chart: openshift-data-foundations
+      chartVersion: 0.2.*
+      extraValueFiles:
+      - $patternref/overrides/values-odf-chart.yaml
+      name: odf
+      namespace: openshift-storage
+      project: opp
+      syncOptions:
+      - CreateNamespace=true
     vault:
       chart: hashicorp-vault
       chartVersion: 0.1.*
       name: vault
       namespace: vault
       project: hub
-  argoCD:
-    resourceTrackingMethod: annotation
   imperative:
     jobs: []
     verbosity: -vvv
-  isHubCluster: true
   managedClusterGroups:
     resilient:
       acmlabels:
@@ -148,30 +177,3 @@
       - name: clusterGroup.isHubCluster
         value: 'false'
       name: resilient
-  name: hub
-  namespaces:
-    golang-external-secrets: null
-    open-cluster-management: null
-    open-cluster-management-observability: null
-    openshift-dr-ops: null
-    openshift-dr-system: null
-    openshift-storage: null
-    policies: null
-    regional-dr: null
-    vault: null
-  projects:
-  - hub
-  - opp
-  sharedValueFiles:
-  - /overrides/values-{{ $.Values.global.clusterPlatform }}.yaml
-  subscriptions:
-    acm:
-      channel: release-2.15
-      name: advanced-cluster-management
-      namespace: open-cluster-management
-    odf-multicluster-orchestrator:
-      name: odf-multicluster-orchestrator
-      namespace: openshift-operators
-    openshift-data-foundation:
-      name: odf-operator
-      namespace: openshift-storage

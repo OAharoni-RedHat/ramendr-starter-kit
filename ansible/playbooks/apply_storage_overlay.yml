@@ -181,15 +181,14 @@
               })
           }}
 
-    - name: "HUB | Write values-hub.yaml (restoring Helm markers)"
+    - name: "HUB | Compute file content (restoring Helm markers)"
+      ansible.builtin.set_fact:
+        _hub_file_content: "{{ ('---\n' + ({'clusterGroup': hub_clustergroup_merged} | to_nice_yaml(indent=2))) | replace(helm_open, '{{') | replace(helm_close, '}}') }}"
+
+    - name: "HUB | Write values-hub.yaml"
       ansible.builtin.copy:
         dest: "{{ values_hub_file }}"
-        content: >-
-          {{
-            ('---\n' + ({'clusterGroup': hub_clustergroup_merged} | to_nice_yaml(indent=2)))
-            | replace(helm_open, '{{')
-            | replace(helm_close, '}}')
-          }}
+        content: "{{ _hub_file_content }}"
         mode: "0644"
 
     # ── RESILIENT: namespaces (dict — combine merges cleanly) ──────────────
@@ -263,15 +262,14 @@
               })
           }}
 
-    - name: "RESILIENT | Write values-resilient.yaml (restoring Helm markers)"
+    - name: "RESILIENT | Compute file content (restoring Helm markers)"
+      ansible.builtin.set_fact:
+        _resilient_file_content: "{{ ('---\n' + ({'clusterGroup': resilient_clustergroup_merged} | to_nice_yaml(indent=2))) | replace(helm_open, '{{') | replace(helm_close, '}}') }}"
+
+    - name: "RESILIENT | Write values-resilient.yaml"
       ansible.builtin.copy:
         dest: "{{ values_resilient_file }}"
-        content: >-
-          {{
-            ('---\n' + ({'clusterGroup': resilient_clustergroup_merged} | to_nice_yaml(indent=2)))
-            | replace(helm_open, '{{')
-            | replace(helm_close, '}}')
-          }}
+        content: "{{ _resilient_file_content }}"
         mode: "0644"
 
     # ── values-egv-dr.yaml: storageClassName ───────────────────────────────
