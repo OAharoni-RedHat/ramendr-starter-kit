@@ -6,7 +6,7 @@
 
 clusterOverrides:
   primary:
-    name: ocp-primary
+    name: oa-rdr-primary
     version: 4.20.6
     install_config:
       metadata:
