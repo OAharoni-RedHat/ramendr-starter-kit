@@ -1,158 +1,177 @@
----
-clusterGroup:
-  name: hub
-  isHubCluster: true
-  # Namespaces as a dictionary — keys are namespace names, enabling clean
-  # map-merge from storage overlay files without list duplication issues.
-  namespaces:
-    open-cluster-management:
-    open-cluster-management-observability:
-    vault:
-    golang-external-secrets:
-    regional-dr:
-    openshift-dr-system:
-    openshift-dr-ops:
-    policies:
-  subscriptions:
-    acm:
-      name: advanced-cluster-management
-      namespace: open-cluster-management
-      channel: release-2.15
-
-
-  argoCD:
-    resourceTrackingMethod: annotation
-
-  projects:
-    - hub
-    - opp
-  # Explicitly mention the cluster-state based overrides we plan to use for this pattern.
-  # We can use self-referential variables because the chart calls the tpl function with these variables defined
-  sharedValueFiles:
-    - '/overrides/values-{{ $.Values.global.clusterPlatform }}.yaml'
-  # sharedValueFiles is a flexible mechanism that will add the listed valuefiles to every app defined in the
-  # applications section. We intend this to supplement and possibly even replace previous "magic" mechanisms, though
-  # we do not at present have a target date for removal.
-  #
-  # To replicate the "classic" magic include structure, the clusterGroup would need all of these
-  # sharedValueFiles, in this order:
-  #   - '/overrides/values-{{ $.Values.global.clusterPlatform }}.yaml'
-  #   - '/overrides/values-{{ $.Values.global.clusterPlatform }}-{{ $.Values.global.clusterVersion }}.yaml'
-  #   - '/overrides/values-{{ $.Values.global.clusterPlatform }}-{{ $.Values.clusterGroup.name }}.yaml'
-  #   - '/overrides/values-{{ $.Values.global.clusterVersion }}-{{ $.Values.clusterGroup.name }}.yaml"
-  #   - '/overrides/values-{{ $.Values.global.localClusterName }}.yaml'
-
-  # This kind of variable substitution will work with any of the variables the Validated Patterns operator knows
-  # about and sets, so this is also possible, for example:
-  #   - '/overrides/values-{{ $.Values.global.hubClusterDomain }}.yaml'
-  #   - '/overrides/values-{{ $.Values.global.localClusterDomain }}.yaml'
+---\nclusterGroup:
   applications:
     acm:
-      name: acm
-      namespace: open-cluster-management
-      project: hub
-      #path: "."
-      #repoURL: https://github.com/mbaldessari/acm-chart
-      #chartVersion: with_patch
       chart: acm
       chartVersion: 0.1.*
       ignoreDifferences:
-        - group: internal.open-cluster-management.io
-          kind: ManagedClusterInfo
-
+      - group: internal.open-cluster-management.io
+        kind: ManagedClusterInfo
+      name: acm
+      namespace: open-cluster-management
+      project: hub
     ensure-openshift-console-plugins:
-      name: ensure-openshift-console-plugins
-      namespace: openshift-console
-      project: opp
       chart: ensure-openshift-console-plugins
       chartVersion: 0.1.*
       extraValueFiles:
-        - '$patternref/overrides/values-console-plugins-hub.yaml'
-
-    opp-policy:
-      name: opp-policy
-      namespace: openshift
+      - $patternref/overrides/values-console-plugins-hub.yaml
+      name: ensure-openshift-console-plugins
+      namespace: openshift-console
       project: opp
-      repoURL: https://github.com/validatedpatterns/opp-policy-chart.git
-      chartVersion: main
-      path: "."
-      annotations:
-        argocd.argoproj.io/sync-wave: "5"
-      syncPolicy:
-        automated: {}
-        retry:
-          limit: 20
-          backoff:
-            duration: 5s
-            factor: 2
-            maxDuration: 3m
-        syncOptions:
-          - syncTimeout=3600s
-          - CreateNamespace=true
-          - PrunePropagationPolicy=foreground
-          - RespectIgnoreDifferences=true
-          - ServerSideApply=true
-      extraValueFiles:
-        - '/overrides/values-cluster-names.yaml'
-      ignoreDifferences:
-      - group: operators.openshift.io
-        kind: Console
-        jsonPointers:
-          - /spec/plugins
-
-    rdr:
-      name: regional-dr
-      namespace: regional-dr
-      project: opp
-      repoURL: https://github.com/validatedpatterns/regionaldr-with-virt-chart.git
-      chartVersion: main
-      path: "."
-      annotations:
-        argocd.argoproj.io/sync-wave: "10"
-      syncPolicy:
-        automated: {}
-        # We have to wait for the clusters to build, whcih can take a long time
-        retry:
-          limit: 60
-          backoff:
-            duration: 5s
-            factor: 2
-            maxDuration: 3m
-        syncOptions:
-          - RespectIgnoreDifferences=true
-      extraValueFiles:
-        - '/overrides/values-cluster-names.yaml'
-        - '/overrides/values-egv-dr.yaml'
-      ignoreDifferences:
-        # Prevent ArgoCD from pruning dynamically created OCM resources
-        # These resources are created by OCM operators and should never be pruned
-        - group: internal.open-cluster-management.io
-          kind: ManagedClusterInfo
-
-    vault:
-      name: vault
-      namespace: vault
-      project: hub
-      chart: hashicorp-vault
-      chartVersion: 0.1.*
-
     golang-external-secrets:
+      chart: golang-external-secrets
+      chartVersion: 0.2.*
       name: golang-external-secrets
       namespace: golang-external-secrets
       project: hub
-      chart: golang-external-secrets
+    odf:
+      chart: openshift-data-foundations
       chartVersion: 0.2.*
-
+      extraValueFiles:
+      - $patternref/overrides/values-odf-chart.yaml
+      name: odf
+      namespace: openshift-storage
+      project: opp
+      syncOptions:
+      - CreateNamespace=true
+    opp-odf:
+      annotations:
+        argocd.argoproj.io/sync-wave: '6'
+      extraValueFiles:
+      - /overrides/values-cluster-names.yaml
+      name: opp-odf
+      namespace: openshift
+      path: charts/hub/opp-odf
+      project: opp
+      syncPolicy:
+        automated: {}
+        retry:
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m
+          limit: 20
+        syncOptions:
+        - CreateNamespace=true
+        - ServerSideApply=true
+    opp-policy:
+      annotations:
+        argocd.argoproj.io/sync-wave: '5'
+      chartVersion: main
+      extraValueFiles:
+      - /overrides/values-cluster-names.yaml
+      ignoreDifferences:
+      - group: operators.openshift.io
+        jsonPointers:
+        - /spec/plugins
+        kind: Console
+      name: opp-policy
+      namespace: openshift
+      path: .
+      project: opp
+      repoURL: https://github.com/validatedpatterns/opp-policy-chart.git
+      syncPolicy:
+        automated: {}
+        retry:
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m
+          limit: 20
+        syncOptions:
+        - syncTimeout=3600s
+        - CreateNamespace=true
+        - PrunePropagationPolicy=foreground
+        - RespectIgnoreDifferences=true
+        - ServerSideApply=true
+    rdr:
+      annotations:
+        argocd.argoproj.io/sync-wave: '10'
+      chartVersion: main
+      extraValueFiles:
+      - /overrides/values-cluster-names.yaml
+      - /overrides/values-egv-dr.yaml
+      ignoreDifferences:
+      - group: internal.open-cluster-management.io
+        kind: ManagedClusterInfo
+      name: regional-dr
+      namespace: regional-dr
+      path: .
+      project: opp
+      repoURL: https://github.com/validatedpatterns/regionaldr-with-virt-chart.git
+      syncPolicy:
+        automated: {}
+        retry:
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m
+          limit: 60
+        syncOptions:
+        - RespectIgnoreDifferences=true
+    rdr-odf:
+      annotations:
+        argocd.argoproj.io/sync-wave: '11'
+      extraValueFiles:
+      - /overrides/values-cluster-names.yaml
+      name: rdr-odf
+      namespace: regional-dr
+      path: charts/hub/rdr-odf
+      project: opp
+      syncPolicy:
+        automated: {}
+        retry:
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m
+          limit: 60
+        syncOptions:
+        - RespectIgnoreDifferences=true
+    vault:
+      chart: hashicorp-vault
+      chartVersion: 0.1.*
+      name: vault
+      namespace: vault
+      project: hub
+  argoCD:
+    resourceTrackingMethod: annotation
   imperative:
-    verbosity: "-vvv"
     jobs: []
-
+    verbosity: -vvv
+  isHubCluster: true
   managedClusterGroups:
     resilient:
-      name: resilient
-      helmOverrides:
-        - name: clusterGroup.isHubCluster
-          value: "false"
       acmlabels:
-        - name: clusterGroup
-          value: resilient
+      - name: clusterGroup
+        value: resilient
+      helmOverrides:
+      - name: clusterGroup.isHubCluster
+        value: 'false'
+      name: resilient
+  name: hub
+  namespaces:
+    golang-external-secrets: null
+    open-cluster-management: null
+    open-cluster-management-observability: null
+    openshift-dr-ops: null
+    openshift-dr-system: null
+    openshift-storage: null
+    policies: null
+    regional-dr: null
+    vault: null
+  projects:
+  - hub
+  - opp
+  sharedValueFiles:
+  - /overrides/values-{{ $.Values.global.clusterPlatform }}.yaml
+  subscriptions:
+    acm:
+      channel: release-2.15
+      name: advanced-cluster-management
+      namespace: open-cluster-management
+    odf-multicluster-orchestrator:
+      name: odf-multicluster-orchestrator
+      namespace: openshift-operators
+    openshift-data-foundation:
+      name: odf-operator
+      namespace: openshift-storage

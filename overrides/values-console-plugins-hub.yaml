@@ -1,3 +1,5 @@
 ---
 ensureConsolePlugins:
-  - gitops-plugin
+- gitops-plugin
+- odf-multicluster-console
+- odf-console

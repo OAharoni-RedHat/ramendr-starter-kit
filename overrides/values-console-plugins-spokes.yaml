@@ -1,3 +1,4 @@
 ---
 ensureConsolePlugins:
-  - node-remediation-console-plugin
+- node-remediation-console-plugin
+- odf-console

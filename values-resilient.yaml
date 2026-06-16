@@ -1,87 +1,119 @@
----
-clusterGroup:
-  name: resilient
-  isHubCluster: false
-
-  argoCD:
-    resourceTrackingMethod: annotation
-
-  # Namespaces as a dictionary — keys are namespace names, enabling clean
-  # map-merge from storage overlay files without list duplication issues.
-  namespaces:
-    golang-external-secrets:
-    openshift-cnv:
-    policies:
-    gitops-vms:
-    external-dns-operator:
-    openshift-workload-availability:
-      operatorGroup: true
-      targetNamespaces:
-
-  subscriptions:
-    openshift-virtualization:
-      name: kubevirt-hyperconverged
-      namespace: openshift-cnv
-      channel: stable
-
-    external-dns:
-      name: external-dns-operator
-      namespace: external-dns-operator
-      channel: stable-v1
-
-    node-health-check:
-      name: node-healthcheck-operator
-      namespace: openshift-workload-availability
-      channel: stable
-
-    self-node-remediation:
-      name: self-node-remediation
-      namespace: openshift-workload-availability
-      channel: stable
-
-
-  projects:
-    - resilient
-
-  imperative:
-    jobs: []
-
+---\nclusterGroup:
   applications:
-    ensure-openshift-console-plugins:
-      name: ensure-openshift-console-plugins
-      namespace: openshift-console
+    adp-data-protection:
+      chartVersion: main
+      name: adp-data-protection-application
+      namespace: openshift-adp
+      path: .
       project: resilient
+      repoURL: https://github.com/validatedpatterns/oadp-data-protection-application-chart.git
+    ensure-openshift-console-plugins:
       chart: ensure-openshift-console-plugins
       chartVersion: 0.1.*
       extraValueFiles:
-        - '$patternref/overrides/values-console-plugins-spokes.yaml'
-
-    golang-external-secrets:
-      name: golang-external-secrets
-      namespace: golang-external-secrets
+      - $patternref/overrides/values-console-plugins-spokes.yaml
+      name: ensure-openshift-console-plugins
+      namespace: openshift-console
       project: resilient
-      chart: golang-external-secrets
-      chartVersion: 0.2.*
-
-    openshift-cnv:
-      name: openshift-cnv
-      namespace: openshift-cnv
-      project: resilient
-      chart: openshift-virtualization-instance
-      chartVersion: 0.1.*
-
-    node-health-check-operator:
-      name: node-health-check-operator
-      namespace: openshift-workload-availability
-      project: resilient
-      chart: node-health-check-operator
-      chartVersion: 0.1.*
-
     external-dns-operator:
+      chart: external-dns-operator
+      chartVersion: 0.1.*
       name: external-dns-operator
       namespace: external-dns-operator
       project: resilient
-      chart: external-dns-operator
+    golang-external-secrets:
+      chart: golang-external-secrets
+      chartVersion: 0.2.*
+      name: golang-external-secrets
+      namespace: golang-external-secrets
+      project: resilient
+    node-health-check-operator:
+      chart: node-health-check-operator
       chartVersion: 0.1.*
-
+      name: node-health-check-operator
+      namespace: openshift-workload-availability
+      project: resilient
+    odf:
+      chart: openshift-data-foundations
+      chartVersion: 0.2.*
+      extraValueFiles:
+      - $patternref/overrides/values-odf-chart.yaml
+      name: odf
+      namespace: openshift-storage
+      project: resilient
+      syncOptions:
+      - CreateNamespace=true
+    openshift-cnv:
+      chart: openshift-virtualization-instance
+      chartVersion: 0.1.*
+      name: openshift-cnv
+      namespace: openshift-cnv
+      project: resilient
+  argoCD:
+    resourceTrackingMethod: annotation
+  imperative:
+    clusterRoleYaml:
+    - apiGroups:
+      - '*'
+      resources:
+      - persistentvolumeclaims
+      - datavolumes
+      - dataimportcrons
+      - datasources
+      verbs:
+      - '*'
+    - apiGroups:
+      - '*'
+      resources:
+      - '*'
+      verbs:
+      - get
+      - list
+      - watch
+    jobs:
+    - name: clean-golden-images
+      playbook: ansible/odf_fix_dataimportcrons.yml
+      verbosity: -vvv
+  isHubCluster: false
   managedClusterGroups: []
+  name: resilient
+  namespaces:
+    external-dns-operator: null
+    gitops-vms: null
+    golang-external-secrets: null
+    openshift-adp:
+      operatorGroup: true
+      targetNamespaces:
+      - openshift-adp
+    openshift-cnv: null
+    openshift-storage: null
+    openshift-workload-availability:
+      operatorGroup: true
+      targetNamespaces: null
+    policies: null
+  projects:
+  - resilient
+  subscriptions:
+    external-dns:
+      channel: stable-v1
+      name: external-dns-operator
+      namespace: external-dns-operator
+    node-health-check:
+      channel: stable
+      name: node-healthcheck-operator
+      namespace: openshift-workload-availability
+    openshift-data-foundation:
+      name: odf-operator
+      namespace: openshift-storage
+    openshift-oadp:
+      channel: stable
+      name: redhat-oadp-operator
+      namespace: openshift-adp
+    openshift-virtualization:
+      channel: stable
+      name: kubevirt-hyperconverged
+      namespace: openshift-cnv
+    self-node-remediation:
+      channel: stable
+      name: self-node-remediation
+      namespace: openshift-workload-availability
