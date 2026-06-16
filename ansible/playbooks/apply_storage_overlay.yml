@@ -12,6 +12,11 @@
 #
 # To reset: git checkout values-hub.yaml values-resilient.yaml \
 #   overrides/values-egv-dr.yaml overrides/values-console-plugins-*.yaml
+#
+# NOTE: values-hub.yaml contains Helm Go template strings like
+# {{ $.Values.global.clusterPlatform }} in sharedValueFiles.  Ansible's
+# Jinja2 engine would try to evaluate those, so we escape {{ / }} to
+# placeholder tokens before parsing and restore them before writing.
 
 - name: Apply storage overlay to pattern values files
   hosts: localhost
@@ -27,23 +32,18 @@
     egv_dr_file: "{{ pattern_dir }}/overrides/values-egv-dr.yaml"
     plugins_hub_file: "{{ pattern_dir }}/overrides/values-console-plugins-hub.yaml"
     plugins_spokes_file: "{{ pattern_dir }}/overrides/values-console-plugins-spokes.yaml"
+    # Placeholder tokens used to escape Helm template markers during processing
+    helm_open: "__HELM_OPEN__"
+    helm_close: "__HELM_CLOSE__"
 
   tasks:
     # ── Load all files ──────────────────────────────────────────────────────
+    # The overlay and simple overrides files do not contain Helm template syntax
+    # so plain include_vars is fine for them.
     - name: Load storage overlay
       ansible.builtin.include_vars:
         file: "{{ overlay_file }}"
         name: overlay
-
-    - name: Load values-hub.yaml
-      ansible.builtin.include_vars:
-        file: "{{ values_hub_file }}"
-        name: hub_values
-
-    - name: Load values-resilient.yaml
-      ansible.builtin.include_vars:
-        file: "{{ values_resilient_file }}"
-        name: resilient_values
 
     - name: Load overrides/values-egv-dr.yaml
       ansible.builtin.include_vars:
@@ -59,6 +59,40 @@
       ansible.builtin.include_vars:
         file: "{{ plugins_spokes_file }}"
         name: plugins_spokes_values
+
+    # values-hub.yaml and values-resilient.yaml contain Helm Go template strings
+    # (e.g. {{ $.Values.global.clusterPlatform }}) inside sharedValueFiles.
+    # We read them as raw text, replace {{ / }} with placeholder tokens so
+    # Ansible's Jinja2 engine never sees them, then parse the sanitised YAML.
+    - name: Read values-hub.yaml as raw text
+      ansible.builtin.slurp:
+        src: "{{ values_hub_file }}"
+      register: hub_raw
+
+    - name: Load hub values (Helm markers escaped)
+      ansible.builtin.set_fact:
+        hub_values: >-
+          {{
+            hub_raw.content | b64decode
+            | replace('{{', helm_open)
+            | replace('}}', helm_close)
+            | from_yaml
+          }}
+
+    - name: Read values-resilient.yaml as raw text
+      ansible.builtin.slurp:
+        src: "{{ values_resilient_file }}"
+      register: resilient_raw
+
+    - name: Load resilient values (Helm markers escaped)
+      ansible.builtin.set_fact:
+        resilient_values: >-
+          {{
+            resilient_raw.content | b64decode
+            | replace('{{', helm_open)
+            | replace('}}', helm_close)
+            | from_yaml
+          }}
 
     # ── Idempotency guard ───────────────────────────────────────────────────
     - name: Check whether the overlay is already applied
@@ -147,10 +181,15 @@
               })
           }}
 
-    - name: "HUB | Write values-hub.yaml"
+    - name: "HUB | Write values-hub.yaml (restoring Helm markers)"
       ansible.builtin.copy:
         dest: "{{ values_hub_file }}"
-        content: "---\n{{ {'clusterGroup': hub_clustergroup_merged} | to_nice_yaml(indent=2) }}"
+        content: >-
+          {{
+            ('---\n' + ({'clusterGroup': hub_clustergroup_merged} | to_nice_yaml(indent=2)))
+            | replace(helm_open, '{{')
+            | replace(helm_close, '}}')
+          }}
         mode: "0644"
 
     # ── RESILIENT: namespaces (dict — combine merges cleanly) ──────────────
@@ -224,10 +263,15 @@
               })
           }}
 
-    - name: "RESILIENT | Write values-resilient.yaml"
+    - name: "RESILIENT | Write values-resilient.yaml (restoring Helm markers)"
       ansible.builtin.copy:
         dest: "{{ values_resilient_file }}"
-        content: "---\n{{ {'clusterGroup': resilient_clustergroup_merged} | to_nice_yaml(indent=2) }}"
+        content: >-
+          {{
+            ('---\n' + ({'clusterGroup': resilient_clustergroup_merged} | to_nice_yaml(indent=2)))
+            | replace(helm_open, '{{')
+            | replace(helm_close, '}}')
+          }}
         mode: "0644"
 
     # ── values-egv-dr.yaml: storageClassName ───────────────────────────────
