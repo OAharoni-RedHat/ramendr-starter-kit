@@ -57,7 +57,7 @@ clusterGroup:
     opp-policy:
       annotations:
         argocd.argoproj.io/sync-wave: '5'
-      chartVersion: main
+      chartVersion: dell-prep
       extraValueFiles:
       - /overrides/values-cluster-names.yaml
       ignoreDifferences:
@@ -69,7 +69,7 @@ clusterGroup:
       namespace: openshift
       path: .
       project: opp
-      repoURL: https://github.com/validatedpatterns/opp-policy-chart.git
+      repoURL: https://github.com/OAharoni-RedHat/opp-policy-chart.git
       syncPolicy:
         automated: {}
         retry:
@@ -107,7 +107,7 @@ clusterGroup:
     rdr:
       annotations:
         argocd.argoproj.io/sync-wave: '10'
-      chartVersion: main
+      chartVersion: dell-prep
       extraValueFiles:
       - /overrides/values-cluster-names.yaml
       - /overrides/values-egv-dr.yaml
@@ -119,7 +119,7 @@ clusterGroup:
       namespace: regional-dr
       path: .
       project: opp
-      repoURL: https://github.com/validatedpatterns/regionaldr-with-virt-chart.git
+      repoURL: https://github.com/OAharoni-RedHat/regionaldr-with-virt-chart.git
       syncPolicy:
         automated: {}
         retry:
