@@ -8,10 +8,12 @@ metadata:
     app.kubernetes.io/component: health-check
   annotations:
     argocd.argoproj.io/sync-wave: "5"
-    argocd.argoproj.io/sync-options: Replace=true
+    argocd.argoproj.io/sync-options: Prune=false
+    argocd.argoproj.io/compare-options: IgnoreExtraneous
 spec:
   backoffLimit: 50
   activeDeadlineSeconds: 14400
+  ttlSecondsAfterFinished: 300
   template:
     spec:
       restartPolicy: OnFailure
