@@ -9,7 +9,7 @@ metadata:
     app.kubernetes.io/component: ramen-hub-ca
   annotations:
     argocd.argoproj.io/sync-wave: "9"
-    argocd.argoproj.io/sync-options: Prune=false
+    argocd.argoproj.io/sync-options: Replace=true,Prune=false
     argocd.argoproj.io/compare-options: IgnoreExtraneous
 spec:
   backoffLimit: 5

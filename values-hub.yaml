@@ -149,7 +149,6 @@ clusterGroup:
           limit: 60
         syncOptions:
         - RespectIgnoreDifferences=true
-        - Replace=true
     odf:
       chart: openshift-data-foundations
       chartVersion: 0.2.*
