@@ -3,6 +3,15 @@
 # Applied by `make install-odf`, which extracts each section and merges it into
 # the corresponding values file before running the install.
 #
+# odf.enabled: true — activates the odf subchart condition in both
+#   opp-policy-chart (charts/opp-odf/) and regionaldr-with-virt-chart (charts/rdr-odf/).
+# This file is also added to the extraValueFiles of the opp-policy and rdr Argo CD apps
+# so the subchart condition flag reaches those charts at render time.
+
+odf:
+  enabled: true
+  postInstallFixesEnabled: true
+#
 # Sections:
 #   hub        → merged into values-hub.yaml
 #   resilient  → merged into values-resilient.yaml
@@ -18,13 +27,15 @@ hub:
     namespaces:
       openshift-storage:
 
-    # Append values-rdr-storage-odf.yaml to the rdr app so the chart uses the ODF
-    # post-install automation path (MirrorPeer + prereqs jobs) rather than creating
-    # DRCluster CRs directly, which requires manual S3 profile names.
     applications:
+      # Enable the odf subchart in both opp-policy and rdr by passing values-storage-odf.yaml
+      # as an extraValueFiles. odf.enabled: true (set below) activates the Helm condition.
+      opp-policy:
+        extraValueFiles:
+          - '$patternref/overrides/values-storage-odf.yaml'
       rdr:
         extraValueFiles:
-          - '$patternref/overrides/values-rdr-storage-odf.yaml'
+          - '$patternref/overrides/values-storage-odf.yaml'
 
     subscriptions:
       odf-multicluster-orchestrator:

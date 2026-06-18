@@ -1,4 +1,11 @@
 ---
+# Global values are forwarded by Helm to all subcharts (odf subchart in opp-policy-chart
+# and regionaldr-with-virt-chart). They must match the ACM ManagedCluster names.
+global:
+  primaryClusterName: oa-rdr-primary
+  secondaryClusterName: oa-rdr-secondary
+  clusterSetName: resilient
+
 # Minimal override for DR cluster names, versions, and regions.
 # This file is applied after chart defaults (override merged last). It only contains overlay keys
 # (clusterOverrides, drpc) so chart regionalDR defaults are preserved.

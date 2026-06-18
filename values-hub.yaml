@@ -84,26 +84,6 @@ clusterGroup:
         - PrunePropagationPolicy=foreground
         - RespectIgnoreDifferences=true
         - ServerSideApply=true
-    opp-odf:
-      annotations:
-        argocd.argoproj.io/sync-wave: '6'
-      extraValueFiles:
-      - /overrides/values-cluster-names.yaml
-      name: opp-odf
-      namespace: openshift
-      path: charts/hub/opp-odf
-      project: opp
-      syncPolicy:
-        automated: {}
-        retry:
-          backoff:
-            duration: 5s
-            factor: 2
-            maxDuration: 3m
-          limit: 20
-        syncOptions:
-        - CreateNamespace=true
-        - ServerSideApply=true
     rdr:
       annotations:
         argocd.argoproj.io/sync-wave: '10'
@@ -120,25 +100,6 @@ clusterGroup:
       path: .
       project: opp
       repoURL: https://github.com/OAharoni-RedHat/regionaldr-with-virt-chart.git
-      syncPolicy:
-        automated: {}
-        retry:
-          backoff:
-            duration: 5s
-            factor: 2
-            maxDuration: 3m
-          limit: 60
-        syncOptions:
-        - RespectIgnoreDifferences=true
-    rdr-odf:
-      annotations:
-        argocd.argoproj.io/sync-wave: '11'
-      extraValueFiles:
-      - /overrides/values-cluster-names.yaml
-      name: rdr-odf
-      namespace: regional-dr
-      path: charts/hub/rdr-odf
-      project: opp
       syncPolicy:
         automated: {}
         retry:
