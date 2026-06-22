@@ -31,3 +31,9 @@ v1.1 - April 2026
 * Default to OCP 4.20+. The subscription for OADP requires "stable" channel not "stable-1.4".
 * Numerous small changes to deal with race conditions and other potential issues
 * Introduce "BYOC" (bring-your-own-cluster) as an option for cluster provisioning (thanks @darkdoc)
+
+v1.2 - June 2026
+
+* Move cluster CA management stuff to a new namespace (cluster-ca-mgt)
+* Use productized OpenShift External Secrets operator
+* Default to OCP 4.22
