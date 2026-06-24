@@ -38,3 +38,4 @@ v1.2 - June 2026
 * Use productized OpenShift External Secrets operator
 * Default to OCP 4.22
 * Update to ACM chart v0.2.*
+* Use versioned charts for opp-policy, regionaldr, and application data protection
