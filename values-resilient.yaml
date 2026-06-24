@@ -12,6 +12,9 @@ clusterGroup:
     policies: {}
     gitops-vms: {}
     external-dns-operator: {}
+    external-secrets-operator:
+      operatorGroup: true
+      targetNamespaces: []
     openshift-adp:
       operatorGroup: true
       targetNamespaces:
