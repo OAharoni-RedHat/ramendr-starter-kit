@@ -15,6 +15,9 @@ clusterGroup:
     openshift-dr-ops: {}
     openshift-storage: {}
     policies: {}
+    cert-manager-operator: {}
+    cert-manager: {}
+    vp-manage-proxy-cluster-ca: {}
   subscriptions:
     acm:
       name: advanced-cluster-management
@@ -33,6 +36,15 @@ clusterGroup:
     openshift-data-foundation:
       name: odf-operator
       namespace: openshift-storage
+
+    cert-manager:
+      name: openshift-cert-manager-operator
+      namespace: cert-manager-operator
+      channel: stable-v1
+      config:
+        env:
+          - name: UNSUPPORTED_ADDON_FEATURES
+            value: "TrustManager=true"
 
   argoCD:
     resourceTrackingMethod: annotation
@@ -85,7 +97,7 @@ clusterGroup:
       namespace: openshift
       argoProject: opp
       chart: opp-policy-chart
-      chartVersion: 0.0.1
+      chartVersion: 0.0.*
       annotations:
         argocd.argoproj.io/sync-wave: "5"
       syncPolicy:
@@ -110,12 +122,75 @@ clusterGroup:
         jsonPointers:
           - /spec/plugins
 
+    vp-manage-proxy-cluster-ca:
+      name: vp-manage-proxy-cluster-ca
+      namespace: vp-manage-proxy-cluster-ca
+      argoProject: hub
+      chart: vp-manage-proxy-cluster-ca
+      chartVersion: 0.2.*
+      annotations:
+        argocd.argoproj.io/sync-wave: "3"
+      syncPolicy:
+        automated: {}
+        retry:
+          limit: 20
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m
+        syncOptions:
+          - RespectIgnoreDifferences=true
+          - ServerSideApply=true
+          - CreateNamespace=true
+      extraValueFiles:
+        - '$patternref/overrides/values-vp-manage-proxy-cluster-ca-hub.yaml'
+      ignoreDifferences:
+        - group: trust.cert-manager.io
+          kind: Bundle
+          jqPathExpressions:
+            - .status
+        - group: ""
+          kind: ConfigMap
+          name: vp-pattern-proxy-ca-bundle
+          namespace: openshift-config
+          jqPathExpressions:
+            - .data["ca-bundle.crt"]
+        - group: config.openshift.io
+          kind: Proxy
+          name: cluster
+          jqPathExpressions:
+            - .status
+
+    odf-dr:
+      name: odf-dr
+      namespace: regional-dr
+      argoProject: opp
+      chart: odf-dr-chart
+      chartVersion: 0.0.*
+      annotations:
+        argocd.argoproj.io/sync-wave: "8"
+      syncPolicy:
+        automated: {}
+        retry:
+          limit: 60
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m
+        syncOptions:
+          - RespectIgnoreDifferences=true
+      extraValueFiles:
+        - '/overrides/values-cluster-names.yaml'
+      ignoreDifferences:
+        - group: internal.open-cluster-management.io
+          kind: ManagedClusterInfo
+
     rdr:
       name: regional-dr
       namespace: regional-dr
       argoProject: opp
       chart: regionaldr-with-virt
-      chartVersion: 0.0.2
+      chartVersion: 0.0.*
       annotations:
         argocd.argoproj.io/sync-wave: "10"
       syncPolicy:
