@@ -19,9 +19,14 @@ clusterGroup:
       operatorGroup: true
       targetNamespaces:
         - openshift-adp
+      labels:
+        cluster-ca.vp.io/differential-ca-target: "true"
     openshift-workload-availability:
       operatorGroup: true
       targetNamespaces: []
+    cert-manager-operator: {}
+    cert-manager: {}
+    vp-manage-proxy-cluster-ca: {}
 
   subscriptions:
     openshift-virtualization:
@@ -58,6 +63,15 @@ clusterGroup:
       namespace: openshift-adp
       channel: stable
 
+    cert-manager:
+      name: openshift-cert-manager-operator
+      namespace: cert-manager-operator
+      channel: stable-v1
+      config:
+        env:
+          - name: UNSUPPORTED_ADDON_FEATURES
+            value: "TrustManager=true"
+
   argoProjects:
     - resilient
 
@@ -65,6 +79,27 @@ clusterGroup:
     jobs: []
 
   applications:
+    vp-manage-proxy-cluster-ca:
+      name: vp-manage-proxy-cluster-ca
+      namespace: vp-manage-proxy-cluster-ca
+      argoProject: resilient
+      chart: vp-manage-proxy-cluster-ca
+      chartVersion: 0.2.*
+      syncPolicy:
+        automated: {}
+        retry:
+          limit: 20
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m
+        syncOptions:
+          - RespectIgnoreDifferences=true
+          - ServerSideApply=true
+          - CreateNamespace=true
+      extraValueFiles:
+        - '$patternref/overrides/values-vp-manage-proxy-cluster-ca-resilient.yaml'
+
     ensure-openshift-console-plugins:
       name: ensure-openshift-console-plugins
       namespace: openshift-console
