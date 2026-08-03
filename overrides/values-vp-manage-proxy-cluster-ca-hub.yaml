@@ -1,8 +1,8 @@
 ---
 # Hub overrides for vp-manage-proxy-cluster-ca-chart.
-# Enables the differential CA bundle (cluster CAs only, no system trust store)
-# written to openshift-config so odf-ramen-trusted-ca can read it for
-# injecting caCertificates into ramen-hub-operator-config s3StoreProfiles.
+# Enables the differential CA bundle (cluster API/ingress CAs only, no system trust store)
+# in openshift-config as vp-pattern-proxy-ca-bundle-differential (key: cabundle).
+# opp-policy s3-ssl / s3CaInjector read that differential ConfigMap for Ramen caCertificates.
 trustManager:
   differentialBundle:
     enabled: true

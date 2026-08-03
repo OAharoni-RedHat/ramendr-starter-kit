@@ -1,0 +1,3 @@
+# Minimal partner: no Submariner Broker/add-ons/prereq Jobs from opp-policy.
+submariner:
+  enabled: false

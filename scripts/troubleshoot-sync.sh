@@ -106,7 +106,7 @@ provide_recommendations() {
     echo "==============="
     echo ""
     echo "1. If sync timeout persists:"
-    echo "   - Increase syncTimeout in values-hub.yaml (currently 3600s)"
+    echo "   - Increase syncTimeout in variants/odf/values-odf.yaml (currently 3600s)"
     echo "   - Consider breaking complex policies into smaller ones"
     echo "   - Check for resource constraints"
     echo ""

@@ -1,0 +1,259 @@
+---
+clusterGroup:
+  name: odf
+  isHubCluster: true
+  namespaces:
+    cluster-ca-mgt: {}
+    open-cluster-management: {}
+    open-cluster-management-observability: {}
+    vault: {}
+    external-secrets-operator:
+      operatorGroup: true
+      targetNamespaces: []
+    regional-dr: {}
+    openshift-dr-system: {}
+    openshift-dr-ops: {}
+    openshift-storage: {}
+    policies: {}
+    cert-manager-operator: {}
+    cert-manager: {}
+    vp-manage-proxy-cluster-ca: {}
+  subscriptions:
+    acm:
+      name: advanced-cluster-management
+      namespace: open-cluster-management
+      channel: release-2.17
+
+    eso:
+      name: openshift-external-secrets-operator
+      namespace: external-secrets-operator
+      channel: stable-v1
+
+    odf-multicluster-orchestrator:
+      name: odf-multicluster-orchestrator
+      namespace: openshift-operators
+
+    openshift-data-foundation:
+      name: odf-operator
+      namespace: openshift-storage
+
+    cert-manager:
+      name: openshift-cert-manager-operator
+      namespace: cert-manager-operator
+      channel: stable-v1
+      config:
+        env:
+          - name: UNSUPPORTED_ADDON_FEATURES
+            value: "TrustManager=true"
+
+  argoCD:
+    resourceTrackingMethod: annotation
+
+  argoProjects:
+    - hub
+    - opp
+  # Explicitly mention the cluster-state based overrides we plan to use for this pattern.
+  # We can use self-referential variables because the chart calls the tpl function with these variables defined
+  sharedValueFiles:
+    - '/overrides/values-{{ $.Values.global.clusterPlatform }}.yaml'
+  # sharedValueFiles is a flexible mechanism that will add the listed valuefiles to every app defined in the
+  # applications section. We intend this to supplement and possibly even replace previous "magic" mechanisms, though
+  # we do not at present have a target date for removal.
+  #
+  # To replicate the "classic" magic include structure, the clusterGroup would need all of these
+  # sharedValueFiles, in this order:
+  #   - '/overrides/values-{{ $.Values.global.clusterPlatform }}.yaml'
+  #   - '/overrides/values-{{ $.Values.global.clusterPlatform }}-{{ $.Values.global.clusterVersion }}.yaml'
+  #   - '/overrides/values-{{ $.Values.global.clusterPlatform }}-{{ $.Values.clusterGroup.name }}.yaml'
+  #   - '/overrides/values-{{ $.Values.global.clusterVersion }}-{{ $.Values.clusterGroup.name }}.yaml"
+  #   - '/overrides/values-{{ $.Values.global.localClusterName }}.yaml'
+
+  # This kind of variable substitution will work with any of the variables the Validated Patterns operator knows
+  # about and sets, so this is also possible, for example:
+  #   - '/overrides/values-{{ $.Values.global.hubClusterDomain }}.yaml'
+  #   - '/overrides/values-{{ $.Values.global.localClusterDomain }}.yaml'
+  applications:
+    acm:
+      name: acm
+      namespace: open-cluster-management
+      argoProject: hub
+      chart: acm
+      chartVersion: 0.2.*
+      ignoreDifferences:
+        - group: internal.open-cluster-management.io
+          kind: ManagedClusterInfo
+
+    ensure-openshift-console-plugins:
+      name: ensure-openshift-console-plugins
+      namespace: openshift-console
+      argoProject: opp
+      chart: ensure-openshift-console-plugins
+      chartVersion: 0.1.*
+      extraValueFiles:
+        - '$patternref/overrides/values-console-plugins-hub.yaml'
+
+    opp-policy:
+      name: opp-policy
+      namespace: openshift
+      argoProject: opp
+      chart: opp-policy-chart
+      chartVersion: 0.1.*
+      annotations:
+        argocd.argoproj.io/sync-wave: "5"
+      syncPolicy:
+        automated: {}
+        retry:
+          limit: 20
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m
+        syncOptions:
+          - syncTimeout=3600s
+          - CreateNamespace=true
+          - PrunePropagationPolicy=foreground
+          - RespectIgnoreDifferences=true
+          - ServerSideApply=true
+      extraValueFiles:
+        - '/overrides/values-cluster-names.yaml'
+      ignoreDifferences:
+      - group: operators.openshift.io
+        kind: Console
+        jsonPointers:
+          - /spec/plugins
+
+    vp-manage-proxy-cluster-ca:
+      name: vp-manage-proxy-cluster-ca
+      namespace: vp-manage-proxy-cluster-ca
+      argoProject: hub
+      chart: vp-manage-proxy-cluster-ca
+      chartVersion: 0.2.*
+      annotations:
+        argocd.argoproj.io/sync-wave: "3"
+      syncPolicy:
+        automated: {}
+        retry:
+          limit: 20
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m
+        syncOptions:
+          - RespectIgnoreDifferences=true
+          - ServerSideApply=true
+          - CreateNamespace=true
+      extraValueFiles:
+        - '$patternref/overrides/values-vp-manage-proxy-cluster-ca-hub.yaml'
+      ignoreDifferences:
+        # Newer than ESO 1.0; omit from chart manifests. Ignore only when live ESO defaults it.
+        - group: external-secrets.io
+          kind: ExternalSecret
+          jqPathExpressions:
+            - .spec.dataFrom[].extract.nullBytePolicy
+        - group: trust.cert-manager.io
+          kind: Bundle
+          jqPathExpressions:
+            - .status
+        - group: ""
+          kind: ConfigMap
+          name: vp-pattern-proxy-ca-bundle
+          namespace: openshift-config
+          jqPathExpressions:
+            - .data["ca-bundle.crt"]
+        - group: config.openshift.io
+          kind: Proxy
+          name: cluster
+          jqPathExpressions:
+            - .status
+
+    odf-dr:
+      name: odf-dr
+      namespace: regional-dr
+      argoProject: opp
+      chart: odf-dr-chart
+      chartVersion: 0.1.*
+      annotations:
+        argocd.argoproj.io/sync-wave: "8"
+      syncPolicy:
+        automated: {}
+        retry:
+          limit: 60
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m
+        syncOptions:
+          - RespectIgnoreDifferences=true
+      extraValueFiles:
+        - '/overrides/values-cluster-names.yaml'
+      ignoreDifferences:
+        - group: internal.open-cluster-management.io
+          kind: ManagedClusterInfo
+
+    rdr:
+      name: regional-dr
+      namespace: regional-dr
+      argoProject: opp
+      chart: regionaldr-with-virt
+      chartVersion: 0.1.*
+      annotations:
+        argocd.argoproj.io/sync-wave: "10"
+      # automated starts on so install can settle; PostSync argocd-sync-disable
+      # (regionaldr-with-virt >= 0.1.1) removes it and adds hub ignoreDifferences
+      # so this desired automated: {} is not re-applied by parent selfHeal.
+      syncPolicy:
+        automated: {}
+        # We have to wait for the clusters to build, whcih can take a long time
+        retry:
+          limit: 60
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m
+        syncOptions:
+          - RespectIgnoreDifferences=true
+      extraValueFiles:
+        - '/overrides/values-cluster-names.yaml'
+        - '/overrides/values-egv-dr.yaml'
+      ignoreDifferences:
+        # Prevent ArgoCD from pruning dynamically created OCM resources
+        # These resources are created by OCM operators and should never be pruned
+        - group: internal.open-cluster-management.io
+          kind: ManagedClusterInfo
+
+    vault:
+      name: vault
+      namespace: vault
+      argoProject: hub
+      chart: hashicorp-vault
+      chartVersion: 0.1.*
+
+    openshift-external-secrets:
+      name: openshift-external-secrets
+      namespace: external-secrets
+      argoProject: opp
+      chart: openshift-external-secrets
+      chartVersion: 0.0.*
+
+    odf:
+      name: odf
+      namespace: openshift-storage
+      argoProject: opp
+      chart: openshift-data-foundations
+      chartVersion: 0.2.*
+      extraValueFiles:
+        - '$patternref/overrides/values-odf-chart.yaml'
+
+  imperative:
+    verbosity: "-vvv"
+    jobs: []
+
+  managedClusterGroups:
+    resilient:
+      name: resilient
+      helmOverrides:
+        - name: clusterGroup.isHubCluster
+          value: "false"
+      acmlabels:
+        - name: clusterGroup
+          value: resilient
