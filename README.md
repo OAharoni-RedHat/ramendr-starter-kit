@@ -85,6 +85,6 @@ Copy [`values-secret.yaml.template`](values-secret.yaml.template) to `values-sec
 | `global/s4-ui-credentials` | `UI_USERNAME`, `UI_PASSWORD` | S4 Web UI login |
 | `global/s4-api-credentials` | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | S3 API identity for S4, bucket Jobs, and Ramen profiles |
 
-Defaults in the template use `s4admin` for the UI user and access key id; password and secret key can be generated (`onMissingValue: generate` + `advancedPolicy`). External Secrets merges both Vault entries into Kubernetes Secret `s4-credentials` in `vp-s4-storage`.
+Defaults in the template use `s4admin` for the UI user and access key ID; password and secret key can be generated (`onMissingValue: generate` + `advancedPolicy`). External Secrets merges both Vault entries into Kubernetes Secret `s4-credentials` in `vp-s4-storage`.
 
 `drpartner-minimal` does not deploy **vp-s4-storage** and does not need these two secrets.
