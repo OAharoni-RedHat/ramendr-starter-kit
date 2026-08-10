@@ -1,6 +1,6 @@
 ---
 clusterGroup:
-  name: hub
+  name: drpartner-minimal
   isHubCluster: true
   namespaces:
     cluster-ca-mgt: {}
@@ -13,7 +13,6 @@ clusterGroup:
     regional-dr: {}
     openshift-dr-system: {}
     openshift-dr-ops: {}
-    openshift-storage: {}
     policies: {}
     cert-manager-operator: {}
     cert-manager: {}
@@ -29,13 +28,17 @@ clusterGroup:
       namespace: external-secrets-operator
       channel: stable-v1
 
+    # Known ODF productization of Ramen (ODF Multicluster Orchestrator).
     odf-multicluster-orchestrator:
       name: odf-multicluster-orchestrator
       namespace: openshift-operators
 
-    openshift-data-foundation:
-      name: odf-operator
-      namespace: openshift-storage
+    # Alternate Ramen productization (replace or disable MCO above when a
+    # non-ODF Ramen operator CSV/package is available). Example:
+    # ramen:
+    #   name: <ramen-operator-package>
+    #   namespace: openshift-operators
+    #   channel: <channel>
 
     cert-manager:
       name: openshift-cert-manager-operator
@@ -52,26 +55,9 @@ clusterGroup:
   argoProjects:
     - hub
     - opp
-  # Explicitly mention the cluster-state based overrides we plan to use for this pattern.
-  # We can use self-referential variables because the chart calls the tpl function with these variables defined
   sharedValueFiles:
     - '/overrides/values-{{ $.Values.global.clusterPlatform }}.yaml'
-  # sharedValueFiles is a flexible mechanism that will add the listed valuefiles to every app defined in the
-  # applications section. We intend this to supplement and possibly even replace previous "magic" mechanisms, though
-  # we do not at present have a target date for removal.
-  #
-  # To replicate the "classic" magic include structure, the clusterGroup would need all of these
-  # sharedValueFiles, in this order:
-  #   - '/overrides/values-{{ $.Values.global.clusterPlatform }}.yaml'
-  #   - '/overrides/values-{{ $.Values.global.clusterPlatform }}-{{ $.Values.global.clusterVersion }}.yaml'
-  #   - '/overrides/values-{{ $.Values.global.clusterPlatform }}-{{ $.Values.clusterGroup.name }}.yaml'
-  #   - '/overrides/values-{{ $.Values.global.clusterVersion }}-{{ $.Values.clusterGroup.name }}.yaml"
-  #   - '/overrides/values-{{ $.Values.global.localClusterName }}.yaml'
 
-  # This kind of variable substitution will work with any of the variables the Validated Patterns operator knows
-  # about and sets, so this is also possible, for example:
-  #   - '/overrides/values-{{ $.Values.global.hubClusterDomain }}.yaml'
-  #   - '/overrides/values-{{ $.Values.global.localClusterDomain }}.yaml'
   applications:
     acm:
       name: acm
@@ -90,14 +76,14 @@ clusterGroup:
       chart: ensure-openshift-console-plugins
       chartVersion: 0.1.*
       extraValueFiles:
-        - '$patternref/overrides/values-console-plugins-hub.yaml'
+        - '$patternref/variants/drpartner-minimal/values-console-plugins-hub.yaml'
 
     opp-policy:
       name: opp-policy
       namespace: openshift
       argoProject: opp
       chart: opp-policy-chart
-      chartVersion: 0.0.*
+      chartVersion: 0.1.*
       annotations:
         argocd.argoproj.io/sync-wave: "5"
       syncPolicy:
@@ -116,6 +102,7 @@ clusterGroup:
           - ServerSideApply=true
       extraValueFiles:
         - '/overrides/values-cluster-names.yaml'
+        - '$patternref/variants/drpartner-minimal/values-opp-policy.yaml'
       ignoreDifferences:
       - group: operators.openshift.io
         kind: Console
@@ -145,6 +132,11 @@ clusterGroup:
       extraValueFiles:
         - '$patternref/overrides/values-vp-manage-proxy-cluster-ca-hub.yaml'
       ignoreDifferences:
+        # Newer than ESO 1.0; omit from chart manifests. Ignore only when live ESO defaults it.
+        - group: external-secrets.io
+          kind: ExternalSecret
+          jqPathExpressions:
+            - .spec.dataFrom[].extract.nullBytePolicy
         - group: trust.cert-manager.io
           kind: Bundle
           jqPathExpressions:
@@ -161,41 +153,20 @@ clusterGroup:
           jqPathExpressions:
             - .status
 
-    odf-dr:
-      name: odf-dr
-      namespace: regional-dr
-      argoProject: opp
-      chart: odf-dr-chart
-      chartVersion: 0.0.*
-      annotations:
-        argocd.argoproj.io/sync-wave: "8"
-      syncPolicy:
-        automated: {}
-        retry:
-          limit: 60
-          backoff:
-            duration: 5s
-            factor: 2
-            maxDuration: 3m
-        syncOptions:
-          - RespectIgnoreDifferences=true
-      extraValueFiles:
-        - '/overrides/values-cluster-names.yaml'
-      ignoreDifferences:
-        - group: internal.open-cluster-management.io
-          kind: ManagedClusterInfo
-
+    # Hive/BYOC cluster bring-up without Ramen CRs, DRClusters, validation, or VMs.
     rdr:
       name: regional-dr
       namespace: regional-dr
       argoProject: opp
       chart: regionaldr-with-virt
-      chartVersion: 0.0.*
+      chartVersion: 0.1.*
       annotations:
         argocd.argoproj.io/sync-wave: "10"
+      # automated starts on so install can settle; PostSync argocd-sync-disable
+      # (regionaldr-with-virt >= 0.1.1) removes it and adds hub ignoreDifferences
+      # so this desired automated: {} is not re-applied by parent selfHeal.
       syncPolicy:
         automated: {}
-        # We have to wait for the clusters to build, whcih can take a long time
         retry:
           limit: 60
           backoff:
@@ -206,10 +177,8 @@ clusterGroup:
           - RespectIgnoreDifferences=true
       extraValueFiles:
         - '/overrides/values-cluster-names.yaml'
-        - '/overrides/values-egv-dr.yaml'
+        - '$patternref/variants/drpartner-minimal/values-regional-dr.yaml'
       ignoreDifferences:
-        # Prevent ArgoCD from pruning dynamically created OCM resources
-        # These resources are created by OCM operators and should never be pruned
         - group: internal.open-cluster-management.io
           kind: ManagedClusterInfo
 
@@ -226,15 +195,6 @@ clusterGroup:
       argoProject: opp
       chart: openshift-external-secrets
       chartVersion: 0.0.*
-
-    odf:
-      name: odf
-      namespace: openshift-storage
-      argoProject: opp
-      chart: openshift-data-foundations
-      chartVersion: 0.2.*
-      extraValueFiles:
-        - '$patternref/overrides/values-odf-chart.yaml'
 
   imperative:
     verbosity: "-vvv"

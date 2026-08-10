@@ -1,0 +1,63 @@
+---
+# This goal of this metadata is mainly used as a source of truth for
+# documentation and qe
+metadata_version: "1.0"
+name: ramendr-starter-kit
+description: RamenDR Regional DR with Virtualization starter kit (odf, drpartner-s4, and drpartner-minimal variants)
+pattern_version: "1.3"
+display_name: RamenDR Starter Kit
+repo_url: https://github.com/validatedpatterns/ramendr-starter-kit
+docs_repo_url: https://github.com/validatedpatterns/docs
+issues_url: https://github.com/validatedpatterns/ramendr-starter-kit/issues
+docs_url: https://validatedpatterns.io/patterns/ramendr-starter-kit/
+ci_url: https://validatedpatterns.io/ci/?pattern=ramendr-starter-kit
+# can be sandbox, tested or maintained
+tier: sandbox
+owners: mhjacks
+requirements:
+  hub: # Main cluster
+    compute:
+      platform:
+        aws:
+          replicas: 3
+          type: m5.2xlarge
+    controlPlane:
+      platform:
+        aws:
+          replicas: 3
+          type: m5.xlarge
+  spoke: # Managed DR clusters (primary/secondary)
+    compute:
+      platform:
+        aws:
+          replicas: 3
+          type: m5.metal
+    controlPlane:
+      platform:
+        aws:
+          replicas: 3
+          type: m5.4xlarge
+
+# Loosely defined extra features like hypershift support, non-openshift
+# kubernetes support, spoke support
+extra_features:
+  hypershift_support: false
+  spoke_support: true
+
+external_requirements:
+# AWS credentials, OpenShift pull secret, optional BYOC kubeconfigs
+
+# Install-time variants under variants/<name>/. Spoke BOMs nest as
+# variants/<variant>/values-<managedClusterGroup.name>.yaml (ACM vpNewFolderDir).
+variants:
+  - name: odf
+    default: true
+    description: Baseline full ODF Regional DR with Virtualization
+  - name: drpartner-s4
+    description: >-
+      Partner CSI foundation with hub S4 object storage — Submariner, OADP,
+      OCP-V, Ramen/MCO; infrastructure DRPolicy/DRClusters without DRPC/VMs
+  - name: drpartner-minimal
+    description: >-
+      Partner CSI foundation without S4, Submariner, or DRCluster sync/validation —
+      OADP, OCP-V, Ramen/MCO only (Hive/BYOC bring-up)

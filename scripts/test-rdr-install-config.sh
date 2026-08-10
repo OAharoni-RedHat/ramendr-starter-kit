@@ -4,9 +4,9 @@
 # Scenarios:
 #   1. Baseline: chart values only → full install_config from chart regionalDR.
 #   2. Chart + overrides/values-cluster-names.yaml → overridden names/regions, full structure.
-#   3. Chart + values-hub + overrides → values-hub has no regionalDR, so chart regionalDR kept; overrides apply.
-#   4. values-hub + overrides (no explicit chart -f) → chart defaults still load; same as 3.
-#   5. Minimal regionalDR + overrides → simulates old values-hub with minimal regionalDR; chart uses
+#   3. Chart + values-odf + overrides → values-odf has no regionalDR, so chart regionalDR kept; overrides apply.
+#   4. values-odf + overrides (no explicit chart -f) → chart defaults still load; same as 3.
+#   5. Minimal regionalDR + overrides → simulates old values-odf with minimal regionalDR; chart uses
 #      files/default-*-install-config.json so install_config is still full; overrides apply.
 #
 # Ensures all required fields are present (metadata, controlPlane, compute, networking, platform)
@@ -18,10 +18,10 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 CHART="$REPO_ROOT/charts/hub/rdr"
 RDR_VALUES="$REPO_ROOT/charts/hub/rdr/values.yaml"
 OVERRIDES="$REPO_ROOT/overrides/values-cluster-names.yaml"
-VALUES_HUB="$REPO_ROOT/values-hub.yaml"
+VALUES_HUB="$REPO_ROOT/variants/odf/values-odf.yaml"
 DOMAIN="${TEST_CLUSTER_DOMAIN:-example.com}"
 
-# Minimal regionalDR (simulates old values-hub that replaced full regionalDR)
+# Minimal regionalDR (simulates old values-odf that replaced full regionalDR)
 # This triggers the chart's default install_config files.
 MINIMAL_REGIONAL_DR="$REPO_ROOT/overrides/values-minimal-regional-dr.yaml"
 
@@ -103,7 +103,7 @@ ensure_minimal_regional_dr() {
   if [[ ! -f "$MINIMAL_REGIONAL_DR" ]]; then
     cat > "$MINIMAL_REGIONAL_DR" << 'EOF'
 ---
-# Simulates old values-hub when it had a minimal regionalDR (no install_config).
+# Simulates old values-odf when it had a minimal regionalDR (no install_config).
 # Used only for testing: chart falls back to files/default-*-install-config.json.
 regionalDR:
   - name: resilient
@@ -155,8 +155,8 @@ main() {
   [[ -n "$preg" && -n "$sreg" ]] || { echo "  FAIL chart+overrides: regions should be set"; ((total_fail++)); }
   echo ""
 
-  # Scenario 3: Chart + values-hub (no regionalDR) + overrides
-  echo "--- Scenario 3: Chart + values-hub + overrides ---"
+  # Scenario 3: Chart + values-odf (no regionalDR) + overrides
+  echo "--- Scenario 3: Chart + values-odf + overrides ---"
   out=$(run_helm -f "$RDR_VALUES" -f "$VALUES_HUB" -f "$OVERRIDES")
   primary=$(get_install_config "$out" 1)
   secondary=$(get_install_config "$out" 2)
@@ -166,8 +166,8 @@ main() {
   echo "  Secondary metadata.name: $(echo "$secondary" | grep -A1 '^metadata:' | grep 'name:' | head -1 | awk '{print $2}')"
   echo ""
 
-  # Scenario 4: values-hub + overrides only (no explicit chart values file; chart defaults still load)
-  echo "--- Scenario 4: values-hub + overrides (chart defaults implicit) ---"
+  # Scenario 4: values-odf + overrides only (no explicit chart values file; chart defaults still load)
+  echo "--- Scenario 4: values-odf + overrides (chart defaults implicit) ---"
   out=$(run_helm -f "$VALUES_HUB" -f "$OVERRIDES")
   primary=$(get_install_config "$out" 1)
   secondary=$(get_install_config "$out" 2)
@@ -177,7 +177,7 @@ main() {
   echo "  Secondary metadata.name: $(echo "$secondary" | grep -A1 '^metadata:' | grep 'name:' | head -1 | awk '{print $2}')"
   echo ""
 
-  # Scenario 5: Minimal regionalDR (simulates old values-hub with regionalDR) + overrides → uses default files
+  # Scenario 5: Minimal regionalDR (simulates old values-odf with regionalDR) + overrides → uses default files
   ensure_minimal_regional_dr
   echo "--- Scenario 5: Minimal regionalDR + overrides (uses chart default install_config files) ---"
   out=$(run_helm -f "$MINIMAL_REGIONAL_DR" -f "$OVERRIDES")
