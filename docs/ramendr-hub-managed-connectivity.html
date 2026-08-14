@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>RamenDR hub ↔ managed connectivity</title>
+  <style>
+    :root {
+      --ink: #1a1a1a;
+      --muted: #555;
+      --acm: #2f6fad;
+      --s3: #3a7a9c;
+      --sub: #2f7a55;
+      --sub-opt: #888;
+      --stor: #b35a3a;
+      --odf: #6b5b95;
+    }
+    body {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      max-width: 900px;
+      margin: 28px auto;
+      padding: 0 20px 40px;
+      color: var(--ink);
+      line-height: 1.45;
+      font-size: 11pt;
+    }
+    h1 { font-size: 1.45rem; margin: 0 0 0.35rem; }
+    h2 {
+      font-size: 1.15rem;
+      margin: 1.6rem 0 0.6rem;
+      border-bottom: 1px solid #bbb;
+      padding-bottom: 0.2rem;
+      page-break-after: avoid;
+    }
+    h3 { font-size: 1rem; margin: 1.1rem 0 0.4rem; page-break-after: avoid; }
+    p { margin: 0.45rem 0; }
+    blockquote {
+      margin: 0.8rem 0;
+      padding: 0.65rem 0.9rem;
+      background: #f4f6f8;
+      border-left: 4px solid var(--acm);
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 0.88rem;
+      margin: 0.6rem 0 1rem;
+    }
+    th, td {
+      border: 1px solid #bbb;
+      padding: 0.4rem 0.5rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: #f0f0f0; }
+    ul, ol { margin: 0.4rem 0 0.8rem; padding-left: 1.25rem; }
+    code { font-family: ui-monospace, monospace; font-size: 0.88em; }
+    .diagram {
+      page-break-inside: avoid;
+      margin: 0.8rem 0 1.2rem;
+      border: 1px solid #ddd;
+      background: #fff;
+      padding: 8px;
+    }
+    .diagram svg { display: block; width: 100%; height: auto; }
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px 22px;
+      font-size: 0.85rem;
+      margin: 0.4rem 0 0.8rem;
+      color: var(--muted);
+    }
+    .legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .swatch { width: 22px; height: 3px; display: inline-block; }
+    .swatch.acm { background: var(--acm); }
+    .swatch.s3 { background: var(--s3); }
+    .swatch.sub { background: var(--sub); }
+    .swatch.sub-opt { background: var(--sub-opt); border-top: 2px dashed var(--sub-opt); height: 0; }
+    .swatch.stor { background: var(--stor); }
+    .swatch.odf { background: var(--odf); }
+    @media print {
+      body { margin: 0; max-width: none; }
+      .diagram { border: none; padding: 0; }
+      h2 { page-break-before: auto; }
+    }
+  </style>
+</head>
+<body>
+  <h1>RamenDR hub ↔ managed connectivity</h1>
+  <p>
+    Three install variants: <strong>odf</strong> (MCG S3 on managed clusters;
+    Submariner required), <strong>drpartner-s4</strong> (hub S4 + array-native
+    replication; Submariner <strong>disabled</strong>), and
+    <strong>drpartner-minimal</strong> (ACM + partner operators only; no S4 or
+    Submariner).
+  </p>
+
+  <h2>Variant comparison</h2>
+  <table>
+    <thead>
+      <tr><th>Concern</th><th>odf</th><th>drpartner-s4</th><th>drpartner-minimal</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>S3 / DR metadata</td>
+        <td>MCG buckets on each managed cluster</td>
+        <td>Hub S4 buckets</td>
+        <td>None</td>
+      </tr>
+      <tr>
+        <td>Hub S3 reachability</td>
+        <td>Hub → each managed MCG endpoint</td>
+        <td>Hub + managed → hub S4</td>
+        <td>n/a</td>
+      </tr>
+      <tr>
+        <td>Peer S3</td>
+        <td>Managed ↔ managed object-bucket metadata</td>
+        <td>Not used</td>
+        <td>Not used</td>
+      </tr>
+      <tr>
+        <td>Volume replication</td>
+        <td>ODF/Ceph over Submariner</td>
+        <td>VSA ↔ VSA (array-native)</td>
+        <td>External / out of pattern</td>
+      </tr>
+      <tr>
+        <td>Submariner</td>
+        <td>Required for Regional-DR volumes</td>
+        <td><strong>Disabled</strong> (opp-policy)</td>
+        <td><strong>Disabled</strong></td>
+      </tr>
+      <tr>
+        <td>ACM + DNS</td>
+        <td>Required</td>
+        <td>Required</td>
+        <td>Required</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- placeholder removed old 2-col table -->
+
+  <!-- ========== S4 ========== -->
+  <h2>drpartner-s4 connectivity map</h2>
+  <blockquote>
+    ACM needs DNS resolvability of managed cluster APIs. S3 metadata lives on
+    hub S4. Volume DR is array-native (VSA ↔ VSA). <strong>Submariner is not
+    deployed</strong> (<code>submariner.enabled: false</code> in opp-policy).
+  </blockquote>
+  <div class="legend">
+    <span><i class="swatch acm"></i> ACM + DNS</span>
+    <span><i class="swatch s3"></i> Hub S4</span>
+    <span><i class="swatch stor"></i> Storage / VSA</span>
+  </div>
+  <div class="diagram">
+    <svg viewBox="0 0 860 560" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="aAcm" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#2f6fad"/></marker>
+        <marker id="aAcmR" markerWidth="8" markerHeight="8" refX="2" refY="3" orient="auto"><path d="M6,0 L0,3 L6,6 Z" fill="#2f6fad"/></marker>
+        <marker id="aS3" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#3a7a9c"/></marker>
+        <marker id="aStor" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#b35a3a"/></marker>
+        <marker id="aStorR" markerWidth="8" markerHeight="8" refX="2" refY="3" orient="auto"><path d="M6,0 L0,3 L6,6 Z" fill="#b35a3a"/></marker>
+      </defs>
+
+      <rect x="255" y="20" width="350" height="110" rx="6" fill="#f7f7f7" stroke="#333" stroke-width="1.5"/>
+      <text x="430" y="48" text-anchor="middle" font-size="15" font-weight="700">Hub cluster</text>
+      <text x="430" y="68" text-anchor="middle" font-size="11" fill="#555">RHACM · MCO · Ramen Hub</text>
+      <rect x="310" y="78" width="240" height="42" rx="4" fill="#eef3f7" stroke="#3a7a9c" stroke-width="1.5"/>
+      <text x="430" y="96" text-anchor="middle" font-size="12" font-weight="600">S4 object store (hub-local)</text>
+      <text x="430" y="112" text-anchor="middle" font-size="10" fill="#555">Managed + hub Ramen → S4 HTTPS 443</text>
+
+      <rect x="40" y="220" width="260" height="80" rx="6" fill="#f7f7f7" stroke="#333" stroke-width="1.5"/>
+      <text x="170" y="248" text-anchor="middle" font-size="14" font-weight="700">Primary managed cluster</text>
+      <text x="170" y="268" text-anchor="middle" font-size="11" fill="#555">Klusterlet · Ramen · Partner CSI</text>
+      <text x="170" y="284" text-anchor="middle" font-size="10" fill="#777">DNS must resolve from hub</text>
+
+      <rect x="560" y="220" width="260" height="80" rx="6" fill="#f7f7f7" stroke="#333" stroke-width="1.5"/>
+      <text x="690" y="248" text-anchor="middle" font-size="14" font-weight="700">Secondary managed cluster</text>
+      <text x="690" y="268" text-anchor="middle" font-size="11" fill="#555">Klusterlet · Ramen · Partner CSI</text>
+      <text x="690" y="284" text-anchor="middle" font-size="10" fill="#777">DNS must resolve from hub</text>
+
+      <rect x="60" y="420" width="220" height="70" rx="6" fill="#faf4f1" stroke="#b35a3a" stroke-width="1.5"/>
+      <text x="170" y="446" text-anchor="middle" font-size="13" font-weight="700">Virtual storage array</text>
+      <text x="170" y="464" text-anchor="middle" font-size="11" fill="#555">Primary site VSA</text>
+      <text x="170" y="480" text-anchor="middle" font-size="10" fill="#777">e.g. Dell PowerStore</text>
+
+      <rect x="580" y="420" width="220" height="70" rx="6" fill="#faf4f1" stroke="#b35a3a" stroke-width="1.5"/>
+      <text x="690" y="446" text-anchor="middle" font-size="13" font-weight="700">Virtual storage array</text>
+      <text x="690" y="464" text-anchor="middle" font-size="11" fill="#555">Secondary site VSA</text>
+      <text x="690" y="480" text-anchor="middle" font-size="10" fill="#777">e.g. Dell PowerStore</text>
+
+      <!-- ACM -->
+      <path d="M 320 130 L 200 220" fill="none" stroke="#2f6fad" stroke-width="2.2" marker-start="url(#aAcmR)" marker-end="url(#aAcm)"/>
+      <text x="200" y="168" fill="#2f6fad" font-size="11" font-weight="600">ACM + DNS</text>
+      <text x="200" y="183" fill="#2f6fad" font-size="10">443 / 6443</text>
+      <path d="M 540 130 L 660 220" fill="none" stroke="#2f6fad" stroke-width="2.2" marker-start="url(#aAcmR)" marker-end="url(#aAcm)"/>
+      <text x="590" y="168" fill="#2f6fad" font-size="11" font-weight="600">ACM + DNS</text>
+      <text x="590" y="183" fill="#2f6fad" font-size="10">443 / 6443</text>
+
+      <!-- S3 outer arcs -->
+      <path d="M 90 220 C 40 170, 80 90, 310 95" fill="none" stroke="#3a7a9c" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#aS3)"/>
+      <path d="M 770 220 C 820 170, 780 90, 550 95" fill="none" stroke="#3a7a9c" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#aS3)"/>
+      <text x="55" y="140" fill="#3a7a9c" font-size="10" font-weight="600">S3 → hub</text>
+      <text x="805" y="140" text-anchor="end" fill="#3a7a9c" font-size="10" font-weight="600">S3 → hub</text>
+
+      <!-- Storage -->
+      <path d="M 170 300 L 170 420" fill="none" stroke="#b35a3a" stroke-width="2.2" marker-start="url(#aStorR)" marker-end="url(#aStor)"/>
+      <text x="184" y="360" fill="#b35a3a" font-size="11" font-weight="600">CSI / mgmt / data</text>
+      <path d="M 690 300 L 690 420" fill="none" stroke="#b35a3a" stroke-width="2.2" marker-start="url(#aStorR)" marker-end="url(#aStor)"/>
+      <text x="704" y="360" fill="#b35a3a" font-size="11" font-weight="600">CSI / mgmt / data</text>
+      <path d="M 280 455 L 580 455" fill="none" stroke="#b35a3a" stroke-width="2.5" marker-start="url(#aStorR)" marker-end="url(#aStor)"/>
+      <text x="430" y="443" text-anchor="middle" fill="#b35a3a" font-size="11" font-weight="600">Array ↔ array replication</text>
+      <text x="430" y="498" text-anchor="middle" fill="#b35a3a" font-size="10">Vendor-specific ports</text>
+
+      <text x="170" y="530" text-anchor="middle" font-size="10" fill="#777">Primary site</text>
+      <text x="690" y="530" text-anchor="middle" font-size="10" fill="#777">Secondary site</text>
+    </svg>
+  </div>
+
+  <h3>drpartner-s4: Hub S4 detail</h3>
+  <div class="diagram">
+    <svg viewBox="0 0 860 260" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="cS3" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#3a7a9c"/></marker>
+      </defs>
+      <text x="430" y="28" text-anchor="middle" font-size="11" fill="#3a7a9c" font-weight="600">All S3 / metadata traffic → hub S4 (HTTPS 443)</text>
+      <rect x="40" y="48" width="260" height="48" rx="6" fill="#f7f7f7" stroke="#333"/>
+      <text x="170" y="77" text-anchor="middle" font-size="12" font-weight="600">Ramen Hub Operator</text>
+      <rect x="40" y="116" width="260" height="48" rx="6" fill="#f7f7f7" stroke="#333"/>
+      <text x="170" y="145" text-anchor="middle" font-size="12" font-weight="600">Primary DR Cluster Operator</text>
+      <rect x="40" y="184" width="260" height="48" rx="6" fill="#f7f7f7" stroke="#333"/>
+      <text x="170" y="213" text-anchor="middle" font-size="12" font-weight="600">Secondary DR Cluster Operator</text>
+      <rect x="560" y="48" width="260" height="184" rx="6" fill="#eef3f7" stroke="#3a7a9c" stroke-width="1.5"/>
+      <text x="690" y="130" text-anchor="middle" font-size="14" font-weight="700">Hub S4 buckets</text>
+      <text x="690" y="152" text-anchor="middle" font-size="11" fill="#555">s3profile-* on hub</text>
+      <text x="690" y="172" text-anchor="middle" font-size="10" fill="#777">vp-s4-storage</text>
+      <path d="M 300 72 L 560 72" fill="none" stroke="#3a7a9c" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#cS3)"/>
+      <path d="M 300 140 L 560 140" fill="none" stroke="#3a7a9c" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#cS3)"/>
+      <path d="M 300 208 L 560 208" fill="none" stroke="#3a7a9c" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#cS3)"/>
+      <text x="430" y="250" text-anchor="middle" font-size="11" fill="#555">No managed ↔ managed S3 in drpartner-s4</text>
+    </svg>
+  </div>
+
+  <!-- ========== ODF ========== -->
+  <h2>odf connectivity map</h2>
+  <blockquote>
+    ACM needs DNS resolvability of managed cluster APIs. S3 metadata buckets
+    (MCG) live <strong>on each managed cluster</strong> — hub and peers both
+    reach those endpoints. <strong>Submariner is required</strong> for ODF RBD
+    cross-site replication.
+  </blockquote>
+  <div class="legend">
+    <span><i class="swatch acm"></i> ACM + DNS</span>
+    <span><i class="swatch s3"></i> Managed MCG S3</span>
+    <span><i class="swatch sub"></i> Submariner (required)</span>
+    <span><i class="swatch odf"></i> ODF volumes</span>
+  </div>
+  <div class="diagram">
+    <svg viewBox="0 0 860 480" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="oAcm" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#2f6fad"/></marker>
+        <marker id="oAcmR" markerWidth="8" markerHeight="8" refX="2" refY="3" orient="auto"><path d="M6,0 L0,3 L6,6 Z" fill="#2f6fad"/></marker>
+        <marker id="oS3" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#3a7a9c"/></marker>
+        <marker id="oS3R" markerWidth="8" markerHeight="8" refX="2" refY="3" orient="auto"><path d="M6,0 L0,3 L6,6 Z" fill="#3a7a9c"/></marker>
+        <marker id="oSub" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#2f7a55"/></marker>
+        <marker id="oSubR" markerWidth="8" markerHeight="8" refX="2" refY="3" orient="auto"><path d="M6,0 L0,3 L6,6 Z" fill="#2f7a55"/></marker>
+      </defs>
+
+      <rect x="255" y="20" width="350" height="90" rx="6" fill="#f7f7f7" stroke="#333" stroke-width="1.5"/>
+      <text x="430" y="50" text-anchor="middle" font-size="15" font-weight="700">Hub cluster</text>
+      <text x="430" y="70" text-anchor="middle" font-size="11" fill="#555">RHACM · MCO · Ramen Hub</text>
+      <text x="430" y="90" text-anchor="middle" font-size="10" fill="#777">s3StoreProfiles → managed MCG endpoints</text>
+
+      <rect x="40" y="200" width="280" height="130" rx="6" fill="#f7f7f7" stroke="#333" stroke-width="1.5"/>
+      <text x="180" y="228" text-anchor="middle" font-size="14" font-weight="700">Primary managed cluster</text>
+      <text x="180" y="248" text-anchor="middle" font-size="11" fill="#555">Klusterlet · Ramen · ODF</text>
+      <rect x="70" y="262" width="220" height="50" rx="4" fill="#eef3f7" stroke="#3a7a9c" stroke-width="1.5"/>
+      <text x="180" y="284" text-anchor="middle" font-size="12" font-weight="600">MCG S3 bucket</text>
+      <text x="180" y="300" text-anchor="middle" font-size="10" fill="#555">on this cluster</text>
+
+      <rect x="540" y="200" width="280" height="130" rx="6" fill="#f7f7f7" stroke="#333" stroke-width="1.5"/>
+      <text x="680" y="228" text-anchor="middle" font-size="14" font-weight="700">Secondary managed cluster</text>
+      <text x="680" y="248" text-anchor="middle" font-size="11" fill="#555">Klusterlet · Ramen · ODF</text>
+      <rect x="570" y="262" width="220" height="50" rx="4" fill="#eef3f7" stroke="#3a7a9c" stroke-width="1.5"/>
+      <text x="680" y="284" text-anchor="middle" font-size="12" font-weight="600">MCG S3 bucket</text>
+      <text x="680" y="300" text-anchor="middle" font-size="10" fill="#555">on this cluster</text>
+
+      <!-- ACM -->
+      <path d="M 320 110 L 180 200" fill="none" stroke="#2f6fad" stroke-width="2.2" marker-start="url(#oAcmR)" marker-end="url(#oAcm)"/>
+      <text x="185" y="148" fill="#2f6fad" font-size="11" font-weight="600">ACM + DNS</text>
+      <text x="185" y="163" fill="#2f6fad" font-size="10">443 / 6443</text>
+      <path d="M 540 110 L 680 200" fill="none" stroke="#2f6fad" stroke-width="2.2" marker-start="url(#oAcmR)" marker-end="url(#oAcm)"/>
+      <text x="600" y="148" fill="#2f6fad" font-size="11" font-weight="600">ACM + DNS</text>
+      <text x="600" y="163" fill="#2f6fad" font-size="10">443 / 6443</text>
+
+      <!-- Hub → MCG (outer arcs from hub down to each MCG) -->
+      <path d="M 310 70 C 80 80, 40 150, 180 262" fill="none" stroke="#3a7a9c" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#oS3)"/>
+      <path d="M 550 70 C 780 80, 820 150, 680 262" fill="none" stroke="#3a7a9c" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#oS3)"/>
+      <text x="430" y="58" text-anchor="middle" fill="#3a7a9c" font-size="10" font-weight="600">Hub → managed MCG</text>
+
+      <!-- Submariner required -->
+      <path d="M 320 240 L 540 240" fill="none" stroke="#2f7a55" stroke-width="2.5" marker-start="url(#oSubR)" marker-end="url(#oSub)"/>
+      <text x="430" y="230" text-anchor="middle" fill="#2f7a55" font-size="11" font-weight="600">Submariner (required)</text>
+      <text x="430" y="258" text-anchor="middle" fill="#2f7a55" font-size="10">UDP 4500 / 4800 / 4490 · Ceph RBD</text>
+
+      <!-- Peer S3 between MCG boxes -->
+      <path d="M 290 287 L 570 287" fill="none" stroke="#3a7a9c" stroke-width="2" stroke-dasharray="2 4" marker-start="url(#oS3R)" marker-end="url(#oS3)"/>
+      <text x="430" y="312" text-anchor="middle" fill="#3a7a9c" font-size="11" font-weight="600">Peer S3 metadata (managed ↔ managed)</text>
+
+      <text x="430" y="370" text-anchor="middle" fill="#6b5b95" font-size="12" font-weight="600">Volume data path: ODF RBD on each cluster</text>
+      <text x="430" y="390" text-anchor="middle" fill="#6b5b95" font-size="11">Cross-site replication uses Submariner-exported storage services</text>
+      <text x="430" y="410" text-anchor="middle" fill="#777" font-size="11">(no external virtual storage array in the odf variant)</text>
+      <text x="430" y="450" text-anchor="middle" fill="#555" font-size="10">Trust MCG TLS CAs on hub and peers · Globalnet if CIDRs overlap</text>
+    </svg>
+  </div>
+
+  <h3>odf: Managed MCG S3 detail</h3>
+  <div class="diagram">
+    <svg viewBox="0 0 860 240" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="dS3" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#3a7a9c"/></marker>
+        <marker id="dS3R" markerWidth="8" markerHeight="8" refX="2" refY="3" orient="auto"><path d="M6,0 L0,3 L6,6 Z" fill="#3a7a9c"/></marker>
+      </defs>
+      <rect x="40" y="40" width="200" height="50" rx="6" fill="#f7f7f7" stroke="#333"/>
+      <text x="140" y="70" text-anchor="middle" font-size="12" font-weight="600">Ramen Hub Operator</text>
+
+      <rect x="40" y="140" width="200" height="60" rx="6" fill="#eef3f7" stroke="#3a7a9c" stroke-width="1.5"/>
+      <text x="140" y="165" text-anchor="middle" font-size="12" font-weight="700">Primary MCG S3</text>
+      <text x="140" y="183" text-anchor="middle" font-size="10" fill="#555">on primary managed</text>
+
+      <rect x="620" y="140" width="200" height="60" rx="6" fill="#eef3f7" stroke="#3a7a9c" stroke-width="1.5"/>
+      <text x="720" y="165" text-anchor="middle" font-size="12" font-weight="700">Secondary MCG S3</text>
+      <text x="720" y="183" text-anchor="middle" font-size="10" fill="#555">on secondary managed</text>
+
+      <path d="M 240 65 L 140 140" fill="none" stroke="#3a7a9c" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#dS3)"/>
+      <path d="M 240 65 L 720 140" fill="none" stroke="#3a7a9c" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#dS3)"/>
+      <text x="430" y="50" text-anchor="middle" fill="#3a7a9c" font-size="11" font-weight="600">Hub s3StoreProfiles → both managed MCG endpoints</text>
+
+      <path d="M 240 170 L 620 170" fill="none" stroke="#3a7a9c" stroke-width="2" stroke-dasharray="2 4" marker-start="url(#dS3R)" marker-end="url(#dS3)"/>
+      <text x="430" y="158" text-anchor="middle" fill="#3a7a9c" font-size="11" font-weight="600">Peer metadata</text>
+      <text x="430" y="220" text-anchor="middle" font-size="11" fill="#555">HTTPS 443 · CA trust required on hub and peers</text>
+    </svg>
+  </div>
+
+  <h2>drpartner-minimal connectivity map</h2>
+  <blockquote>
+    ACM needs DNS resolvability of managed cluster APIs. Deploys partner operators
+    (MCO/Ramen, CNV, OADP) and Hive/BYOC plumbing only — <strong>no vp-s4-storage</strong>,
+    no DRClusters, and <strong>no Submariner</strong>. Volume DR is external to the pattern.
+  </blockquote>
+  <div class="legend">
+    <span><i class="swatch acm"></i> ACM + DNS</span>
+    <span><i class="swatch stor"></i> External VSA (dashed)</span>
+  </div>
+  <div class="diagram">
+    <svg viewBox="0 0 860 420" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="mAcm" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#2f6fad"/></marker>
+        <marker id="mAcmR" markerWidth="8" markerHeight="8" refX="2" refY="3" orient="auto"><path d="M6,0 L0,3 L6,6 Z" fill="#2f6fad"/></marker>
+        <marker id="mStor" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#999"/></marker>
+      </defs>
+      <rect x="255" y="20" width="350" height="80" rx="6" fill="#f7f7f7" stroke="#333" stroke-width="1.5"/>
+      <text x="430" y="50" text-anchor="middle" font-size="15" font-weight="700">Hub cluster</text>
+      <text x="430" y="72" text-anchor="middle" font-size="11" fill="#555">RHACM · MCO · Ramen (no S4 · no DRClusters)</text>
+      <rect x="40" y="180" width="260" height="70" rx="6" fill="#f7f7f7" stroke="#333" stroke-width="1.5"/>
+      <text x="170" y="210" text-anchor="middle" font-size="14" font-weight="700">Primary managed cluster</text>
+      <text x="170" y="230" text-anchor="middle" font-size="11" fill="#555">Ramen · CNV · OADP</text>
+      <rect x="560" y="180" width="260" height="70" rx="6" fill="#f7f7f7" stroke="#333" stroke-width="1.5"/>
+      <text x="690" y="210" text-anchor="middle" font-size="14" font-weight="700">Secondary managed cluster</text>
+      <text x="690" y="230" text-anchor="middle" font-size="11" fill="#555">Ramen · CNV · OADP</text>
+      <rect x="60" y="320" width="220" height="60" rx="6" fill="#fafafa" stroke="#999" stroke-width="1.5" stroke-dasharray="5 3"/>
+      <text x="170" y="348" text-anchor="middle" font-size="12" font-weight="600">Primary VSA (external)</text>
+      <rect x="580" y="320" width="220" height="60" rx="6" fill="#fafafa" stroke="#999" stroke-width="1.5" stroke-dasharray="5 3"/>
+      <text x="690" y="348" text-anchor="middle" font-size="12" font-weight="600">Secondary VSA (external)</text>
+      <path d="M 320 100 L 200 180" fill="none" stroke="#2f6fad" stroke-width="2.2" marker-start="url(#mAcmR)" marker-end="url(#mAcm)"/>
+      <path d="M 540 100 L 660 180" fill="none" stroke="#2f6fad" stroke-width="2.2" marker-start="url(#mAcmR)" marker-end="url(#mAcm)"/>
+      <text x="430" y="140" text-anchor="middle" fill="#2f6fad" font-size="11" font-weight="600">ACM + DNS · 443 / 6443</text>
+      <path d="M 170 250 L 170 320" fill="none" stroke="#999" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#mStor)"/>
+      <path d="M 690 250 L 690 320" fill="none" stroke="#999" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#mStor)"/>
+      <path d="M 280 350 L 580 350" fill="none" stroke="#999" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#mStor)"/>
+      <text x="430" y="338" text-anchor="middle" fill="#666" font-size="11">External array replication (out of pattern)</text>
+      <text x="430" y="400" text-anchor="middle" fill="#555" font-size="10">No S3 profiles · No Submariner · regionaldr resources/infrastructure disabled</text>
+    </svg>
+  </div>
+
+  <h2>Shared requirements</h2>
+  <ul>
+    <li><strong>ACM + DNS</strong> — Hub must resolve each managed cluster API hostname, then connect over HTTPS 443 / kube API 6443.</li>
+    <li><strong>TLS / CA trust</strong> — Trust custom certs for S4 (s4 path) or MCG endpoints (odf path).</li>
+  </ul>
+
+  <h2>Ports</h2>
+  <table>
+    <thead>
+      <tr><th>Path</th><th>When</th><th>Protocol / ports</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Hub DNS → managed API</td><td>Both</td><td>DNS UDP/TCP 53</td></tr>
+      <tr><td>Hub ↔ managed API</td><td>Both</td><td>HTTPS 443; kube API 6443</td></tr>
+      <tr><td>Clients → hub S4</td><td>drpartner-s4</td><td>HTTPS 443</td></tr>
+      <tr><td>Hub / peers → managed MCG</td><td>odf</td><td>HTTPS 443</td></tr>
+      <tr><td>Cluster ↔ local VSA</td><td>drpartner-s4, drpartner-minimal</td><td>Vendor CSI / iSCSI / NVMe / mgmt</td></tr>
+      <tr><td>VSA ↔ VSA replication</td><td>drpartner-s4, drpartner-minimal</td><td>Vendor replication ports</td></tr>
+      <tr><td>Submariner</td><td>odf only</td><td>UDP 4500 / 4800 / 4490</td></tr>
+    </tbody>
+  </table>
+</body>
+</html>
