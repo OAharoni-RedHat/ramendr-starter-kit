@@ -14,7 +14,7 @@
 
 ## TLS and CA (current implementation)
 
-Certificate handling is delivered by external charts deployed via Argo CD, not local policy YAML in this repo:
+Certificate handling is delivered by external charts deployed via Argo CD, not local policy YAML in this repository:
 
 | Chart | Role |
 |-------|------|
