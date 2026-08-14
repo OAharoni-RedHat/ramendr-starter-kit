@@ -19,3 +19,10 @@ warn_list:
 
 skip_list:
   - var-naming[no-role-prefix]
+  - name[template] # Allow Jinja templating inside task and play names
+  - template-instead-of-copy # Templated files should use template instead of copy
+  - yaml[line-length] # too long lines
+  - yaml[indentation] # Forcing lists to be always indented by 2 chars is silly IMO
+  - var-naming[no-role-prefix] # This would be too much churn for very little gain
+  - no-changed-when
+  - galaxy[no-changelog] # We currently don't have a changelog.yaml file
