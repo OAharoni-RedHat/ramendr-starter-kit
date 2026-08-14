@@ -20,7 +20,7 @@ Spoke BOMs nest under the install variant as
 | Variant | Select | Purpose |
 |---------|--------|---------|
 | `odf` (default) | `main.variant: odf` | Baseline: full ODF Regional DR + Virtualization |
-| `drpartner-s4` | `main.variant: drpartner-s4` | Partner CSI + hub S4: Submariner, OADP, OCP-V, Ramen/MCO; infrastructure DRClusters + `2m-novm` DRPolicy (no `2m-vm`/DRPC/VMs) |
+| `drpartner-s4` | `main.variant: drpartner-s4` | Partner CSI + hub S4: OADP, OCP-V, Ramen/MCO; infrastructure DRClusters + `2m-novm` DRPolicy (no `2m-vm`/DRPC/VMs); Submariner disabled |
 | `drpartner-minimal` | `main.variant: drpartner-minimal` | Partner CSI without S4, Submariner, or DRCluster sync/validation: OADP, OCP-V, Ramen/MCO; Hive/BYOC only |
 
 Layout:
@@ -69,7 +69,7 @@ Control-test chart pins (until published on charts.validatedpatterns.io):
 | regionaldr-with-virt | 0.1.0 | `conditionalize_resources` |
 | vp-manage-proxy-cluster-ca | 0.2.1 | `eso-externalsecret-argocd-sync` |
 
-`drpartner-s4` expectations after sync: Submariner and s3-ssl/CA via **opp-policy**, hub **vp-s4-storage** (buckets via `s4Role.buckets`), MCO (Ramen), CNV, and OADP present;
+`drpartner-s4` expectations after sync: s3-ssl/CA via **opp-policy** (Submariner disabled in `values-opp-policy.yaml`), hub **vp-s4-storage** (buckets via `s4Role.buckets`), MCO (Ramen), CNV, and OADP present;
 no odf-dr, MirrorPeer, or ODF StorageSystem; regionaldr with `ramen.infrastructureEnabled` creates DRClusters, a single `2m-novm` DRPolicy (no `2m-vm`), and upserts hub
 s3StoreProfiles only (`ensureBuckets: false`; no DRPC/VMs); opp-policy injects `caCertificates` only.
 
