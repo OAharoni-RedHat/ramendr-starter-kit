@@ -102,8 +102,8 @@ clusterGroup:
           - RespectIgnoreDifferences=true
           - ServerSideApply=true
       extraValueFiles:
-        - '/overrides/values-cluster-names.yaml'
-        - '/overrides/values-opp-policy.yaml'
+        - '$patternref/overrides/values-cluster-names.yaml'
+        - '$patternref/variants/drpartner-s4/values-opp-policy.yaml'
       ignoreDifferences:
       - group: operators.openshift.io
         kind: Console
