@@ -88,7 +88,7 @@
             fail_msg: |
               FATAL: BYOC DR Clusters have different versions:
               Primary: {{ primary_cluster_version }}, Secondary: {{ secondary_cluster_version }} HUB: {{ hub_cluster_version }}).
-              Currently only same minor verion supported by ramenDR and odf.
+              Currently only same minor version supported by ramenDR and odf.
 
         - name: Hub cluster network
           kubernetes.core.k8s_info:

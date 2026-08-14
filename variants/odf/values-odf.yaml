@@ -203,7 +203,7 @@ clusterGroup:
       # so this desired automated: {} is not re-applied by parent selfHeal.
       syncPolicy:
         automated: {}
-        # We have to wait for the clusters to build, whcih can take a long time
+        # We have to wait for the clusters to build, which can take a long time
         retry:
           limit: 60
           backoff:
