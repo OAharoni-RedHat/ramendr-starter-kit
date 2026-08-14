@@ -103,6 +103,7 @@ clusterGroup:
           - ServerSideApply=true
       extraValueFiles:
         - '/overrides/values-cluster-names.yaml'
+        - '/overrides/values-opp-policy.yaml'
       ignoreDifferences:
       - group: operators.openshift.io
         kind: Console
