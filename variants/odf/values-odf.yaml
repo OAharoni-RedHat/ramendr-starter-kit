@@ -203,7 +203,7 @@ clusterGroup:
       # so this desired automated: {} is not re-applied by parent selfHeal.
       syncPolicy:
         automated: {}
-        # We have to wait for the clusters to build, whcih can take a long time
+        # We have to wait for the clusters to build, which can take a long time
         retry:
           limit: 60
           backoff:
@@ -240,7 +240,7 @@ clusterGroup:
       namespace: openshift-storage
       argoProject: opp
       chart: openshift-data-foundations
-      chartVersion: 0.2.*
+      chartVersion: 0.3.*
       extraValueFiles:
         - '$patternref/overrides/values-odf-chart.yaml'
 

@@ -1,0 +1,8 @@
+---
+# Workflows intentionally use major/minor version tags (@v8, @v26), not commit SHAs.
+rules:
+  unpinned-uses:
+    disable: true
+  secrets-inherit:
+    ignore:
+      - update-metadata.yml

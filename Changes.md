@@ -31,6 +31,8 @@ v1.3 - August 2026
   ODF StorageSystem, MirrorPeer, odf-dr, or Ramen DR CRs. Select with `main.variant: partner`.
 * Partner leaves a commented subscription hook for an alternate (non-ODF) Ramen productization.
 * Requires `regionaldr-with-virt` chart >= 0.1.0 (`ramen.resourcesEnabled` / `edgeGitopsVms.enabled`).
+* Disable submariner by default on drpartner-s4 (since we expect native array replication in this case).
+* Update to ODF chart v0.3 to support GCP and Azure
 
 v1.2 - June 2026
 

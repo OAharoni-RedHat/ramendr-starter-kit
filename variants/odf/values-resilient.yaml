@@ -134,7 +134,7 @@ clusterGroup:
       namespace: openshift-storage
       argoProject: resilient
       chart: openshift-data-foundations
-      chartVersion: 0.2.*
+      chartVersion: 0.3.*
       extraValueFiles:
         - '$patternref/overrides/values-odf-chart.yaml'
 

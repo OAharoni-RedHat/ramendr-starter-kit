@@ -1,0 +1,9 @@
+---
+# Super-linter loads this file via GITHUB_ACTIONS_ZIZMOR_CONFIG_FILE (default: zizmor.yaml).
+# Workflows intentionally use major/minor version tags (@v8, @v26), not commit SHAs.
+rules:
+  unpinned-uses:
+    disable: true
+  secrets-inherit:
+    ignore:
+      - update-metadata.yml
