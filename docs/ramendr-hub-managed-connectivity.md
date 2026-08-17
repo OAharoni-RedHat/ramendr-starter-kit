@@ -6,7 +6,7 @@ Three install variants (`main.variant` in `values-global.yaml`):
 - **drpartner-s4** — partner CSI + hub S4; array-native volume replication; **Submariner disabled** (`submariner.enabled: false` in opp-policy)
 - **drpartner-minimal** — partner CSI operators and Hive/BYOC plumbing only; no S4, DRClusters, or Submariner
 
-> Prefer the [HTML](ramendr-hub-managed-connectivity.html) / [PDF](ramendr-hub-managed-connectivity.pdf) for print-quality SVG diagrams.
+> Draw.io source with one tab per variant: [hub-managed-connectivity.drawio](hub-managed-connectivity.drawio).
 
 ## Variant comparison
 
@@ -93,12 +93,20 @@ No managed ↔ managed S3 and no Submariner in `drpartner-s4`.
 ACM needs DNS resolvability of managed cluster APIs. Deploys partner operators (MCO/Ramen, CNV, OADP) and Hive/BYOC plumbing only — **no vp-s4-storage**, no DRClusters, no s3StoreProfiles, and **no Submariner**. Volume DR and S3 metadata are outside this pattern.
 
 ```mermaid
-flowchart TB
+flowchart LR
   Hub["Hub cluster<br/>RHACM · MCO · Ramen Hub"]
-  Primary["Primary managed cluster<br/>Klusterlet · Ramen · CNV · OADP"]
-  Secondary["Secondary managed cluster<br/>Klusterlet · Ramen · CNV · OADP"]
-  VSA1["Primary site VSA (external)"]
-  VSA2["Secondary site VSA (external)"]
+
+  subgraph clusters["Managed clusters"]
+    direction TB
+    Primary["Primary managed cluster<br/>Klusterlet · Ramen · CNV · OADP"]
+    Secondary["Secondary managed cluster<br/>Klusterlet · Ramen · CNV · OADP"]
+  end
+
+  subgraph vsas["External VSAs"]
+    direction TB
+    VSA1["Primary site VSA<br/>(external)"]
+    VSA2["Secondary site VSA<br/>(external)"]
+  end
 
   Hub ---|"ACM DNS + HTTPS"| Primary
   Hub ---|"ACM DNS + HTTPS"| Secondary
