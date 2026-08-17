@@ -96,19 +96,13 @@ ACM needs DNS resolvability of managed cluster APIs. Deploys partner operators (
 flowchart LR
   Hub["Hub cluster<br/>RHACM · MCO · Ramen Hub"]
 
-  subgraph sites["Managed sites"]
-    direction TB
-    subgraph primarySite["Primary site"]
-      direction LR
-      Primary["Primary managed cluster<br/>Klusterlet · Ramen · CNV · OADP"]
-      VSA1["Primary site VSA<br/>(external)"]
-    end
-    subgraph secondarySite["Secondary site"]
-      direction LR
-      Secondary["Secondary managed cluster<br/>Klusterlet · Ramen · CNV · OADP"]
-      VSA2["Secondary site VSA<br/>(external)"]
-    end
-  end
+  Primary["Primary managed cluster<br/>Klusterlet · Ramen · CNV · OADP"]
+  Secondary["Secondary managed cluster<br/>Klusterlet · Ramen · CNV · OADP"]
+  VSA1["Primary site VSA<br/>(external)"]
+  VSA2["Secondary site VSA<br/>(external)"]
+
+  Primary ~~~ Secondary
+  VSA1 ~~~ VSA2
 
   Hub ---|"ACM DNS + HTTPS"| Primary
   Hub ---|"ACM DNS + HTTPS"| Secondary
