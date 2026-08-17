@@ -39,12 +39,12 @@ flowchart TB
     MCG2["MCG S3 bucket"]
   end
 
-  Hub ---|ACM DNS + HTTPS| Primary
-  Hub ---|ACM DNS + HTTPS| Secondary
-  Hub -->|HTTPS S3| MCG1
-  Hub -->|HTTPS S3| MCG2
-  MCG1 ---|Peer S3 metadata| MCG2
-  Primary ---|Submariner required<br/>Ceph RBD| Secondary
+  Hub ---|"ACM DNS + HTTPS"| Primary
+  Hub ---|"ACM DNS + HTTPS"| Secondary
+  Hub -->|"HTTPS S3"| MCG1
+  Hub -->|"HTTPS S3"| MCG2
+  MCG1 ---|"Peer S3 metadata"| MCG2
+  Primary ---|"Submariner required<br/>Ceph RBD"| Secondary
 ```
 
 ### Managed MCG S3 detail
@@ -53,7 +53,7 @@ flowchart TB
 flowchart LR
   Hub["Ramen Hub Operator"] --> MCG1["Primary MCG S3"]
   Hub --> MCG2["Secondary MCG S3"]
-  MCG1 ---|Peer metadata| MCG2
+  MCG1 ---|"Peer metadata"| MCG2
 ```
 
 ## drpartner-s4
@@ -68,13 +68,13 @@ flowchart TB
   VSA1["Primary site VSA"]
   VSA2["Secondary site VSA"]
 
-  Hub ---|ACM DNS + HTTPS| Primary
-  Hub ---|ACM DNS + HTTPS| Secondary
-  Primary -->|S3 metadata| Hub
-  Secondary -->|S3 metadata| Hub
-  Primary ---|CSI / mgmt / data| VSA1
-  Secondary ---|CSI / mgmt / data| VSA2
-  VSA1 ---|Array replication| VSA2
+  Hub ---|"ACM DNS + HTTPS"| Primary
+  Hub ---|"ACM DNS + HTTPS"| Secondary
+  Primary -->|"S3 metadata"| Hub
+  Secondary -->|"S3 metadata"| Hub
+  Primary ---|"CSI / mgmt / data"| VSA1
+  Secondary ---|"CSI / mgmt / data"| VSA2
+  VSA1 ---|"Array replication"| VSA2
 ```
 
 ### Hub S4 detail
@@ -100,11 +100,11 @@ flowchart TB
   VSA1["Primary site VSA (external)"]
   VSA2["Secondary site VSA (external)"]
 
-  Hub ---|ACM DNS + HTTPS| Primary
-  Hub ---|ACM DNS + HTTPS| Secondary
-  Primary ---|CSI / mgmt / data| VSA1
-  Secondary ---|CSI / mgmt / data| VSA2
-  VSA1 ---|Array replication (external)| VSA2
+  Hub ---|"ACM DNS + HTTPS"| Primary
+  Hub ---|"ACM DNS + HTTPS"| Secondary
+  Primary ---|"CSI / mgmt / data"| VSA1
+  Secondary ---|"CSI / mgmt / data"| VSA2
+  VSA1 ---|"Array replication (external)"| VSA2
 ```
 
 ## Shared requirements
