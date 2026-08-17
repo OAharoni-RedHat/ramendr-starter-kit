@@ -96,7 +96,7 @@ ACM needs DNS resolvability of managed cluster APIs. Deploys partner operators (
 flowchart LR
   Hub["Hub cluster<br/>RHACM · MCO · Ramen Hub"]
 
-  subgraph stack[""]
+  subgraph sites["Managed sites"]
     direction TB
     subgraph primarySite["Primary site"]
       direction LR
