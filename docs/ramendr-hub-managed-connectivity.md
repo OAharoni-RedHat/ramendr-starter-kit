@@ -92,30 +92,9 @@ No managed ↔ managed S3 and no Submariner in `drpartner-s4`.
 
 ACM needs DNS resolvability of managed cluster APIs. Deploys partner operators (MCO/Ramen, CNV, OADP) and Hive/BYOC plumbing only — **no vp-s4-storage**, no DRClusters, no s3StoreProfiles, and **no Submariner**. Volume DR and S3 metadata are outside this pattern.
 
-```mermaid
-flowchart LR
-  Hub["Hub cluster<br/>RHACM · MCO · Ramen Hub"]
+![drpartner-minimal connectivity](drpartner-minimal-connectivity.svg)
 
-  subgraph managedClusters["Managed clusters"]
-    direction TB
-    Primary["Primary site<br/>Managed: Ramen · CNV · OADP"]
-    Secondary["Secondary site<br/>Managed: Ramen · CNV · OADP"]
-    Primary ~~~ Secondary
-  end
-
-  subgraph externalVSAs["External VSAs"]
-    direction TB
-    VSA1["Primary site<br/>VSA (external)"]
-    VSA2["Secondary site<br/>VSA (external)"]
-    VSA1 ~~~ VSA2
-  end
-
-  Hub ---|"ACM DNS + HTTPS"| Primary
-  Hub ---|"ACM DNS + HTTPS"| Secondary
-  Primary ---|"CSI / mgmt / data"| VSA1
-  Secondary ---|"CSI / mgmt / data"| VSA2
-  VSA1 ---|"Array replication (external)"| VSA2
-```
+GitHub’s Mermaid renderer does not align multi-row hub/spoke diagrams reliably; the SVG above matches the [hub-managed-connectivity.drawio](hub-managed-connectivity.drawio) **drpartner-minimal** tab.
 
 ## Shared requirements
 

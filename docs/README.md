@@ -9,7 +9,7 @@
 | [ramendr-architecture-drpartner-minimal.drawio](ramendr-architecture-drpartner-minimal.drawio) | `drpartner-minimal` | ACM + partner operators only; no S4 or DR CRs |
 | [ramendr-architecture.drawio](ramendr-architecture.drawio) | `odf` | Alias for the odf schematic |
 | [hub-managed-connectivity.drawio](hub-managed-connectivity.drawio) | All variants | Lightweight connectivity tabs (one per variant) |
-| [ramendr-hub-managed-connectivity.md](ramendr-hub-managed-connectivity.md) | All variants | Hub ↔ managed connectivity (mermaid diagrams) |
+| [ramendr-hub-managed-connectivity.md](ramendr-hub-managed-connectivity.md) | All variants | Hub ↔ managed connectivity (mermaid for odf/s4; [SVG](drpartner-minimal-connectivity.svg) for drpartner-minimal) |
 | [../README.md](../README.md) | All variants | Variant selection, S3/DRCluster matrix, secrets, chart pins |
 
 ## TLS and CA (current implementation)
