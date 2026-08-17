@@ -98,15 +98,15 @@ flowchart LR
 
   subgraph managedClusters["Managed clusters"]
     direction TB
-    Primary["Primary managed<br/>Ramen · CNV · OADP"]
-    Secondary["Secondary managed<br/>Ramen · CNV · OADP"]
+    Primary["Primary site<br/>Managed: Ramen · CNV · OADP"]
+    Secondary["Secondary site<br/>Managed: Ramen · CNV · OADP"]
     Primary ~~~ Secondary
   end
 
   subgraph externalVSAs["External VSAs"]
     direction TB
-    VSA1["Primary VSA<br/>(external)"]
-    VSA2["Secondary VSA<br/>(external)"]
+    VSA1["Primary site<br/>VSA (external)"]
+    VSA2["Secondary site<br/>VSA (external)"]
     VSA1 ~~~ VSA2
   end
 
