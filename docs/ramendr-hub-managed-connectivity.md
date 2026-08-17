@@ -60,22 +60,9 @@ flowchart LR
 
 ACM needs DNS resolvability of managed cluster APIs. S3 metadata lives on **hub S4** (vp-s4-storage). Volume DR is array-native (VSA ↔ VSA). regionaldr creates hub DRClusters and a `2m-novm` DRPolicy only — no DRPC/VMs. **Submariner is not deployed** (`values-opp-policy.yaml` sets `submariner.enabled: false`).
 
-```mermaid
-flowchart TB
-  Hub["Hub cluster<br/>RHACM · MCO · Ramen Hub<br/>vp-s4-storage · S4 buckets"]
-  Primary["Primary managed cluster"]
-  Secondary["Secondary managed cluster"]
-  VSA1["Primary site VSA"]
-  VSA2["Secondary site VSA"]
+![drpartner-s4 connectivity](drpartner-s4-connectivity.png)
 
-  Hub ---|"ACM DNS + HTTPS"| Primary
-  Hub ---|"ACM DNS + HTTPS"| Secondary
-  Primary -->|"S3 metadata"| Hub
-  Secondary -->|"S3 metadata"| Hub
-  Primary ---|"CSI / mgmt / data"| VSA1
-  Secondary ---|"CSI / mgmt / data"| VSA2
-  VSA1 ---|"Array replication"| VSA2
-```
+Aligned diagram (PNG); source SVG and [hub-managed-connectivity.drawio](hub-managed-connectivity.drawio) **drpartner-s4** tab. GitHub does not render local SVG in markdown reliably.
 
 ### Hub S4 detail
 
@@ -92,9 +79,9 @@ No managed ↔ managed S3 and no Submariner in `drpartner-s4`.
 
 ACM needs DNS resolvability of managed cluster APIs. Deploys partner operators (MCO/Ramen, CNV, OADP) and Hive/BYOC plumbing only — **no vp-s4-storage**, no DRClusters, no s3StoreProfiles, and **no Submariner**. Volume DR and S3 metadata are outside this pattern.
 
-![drpartner-minimal connectivity](drpartner-minimal-connectivity.svg)
+![drpartner-minimal connectivity](drpartner-minimal-connectivity.png)
 
-GitHub’s Mermaid renderer does not align multi-row hub/spoke diagrams reliably; the SVG above matches the [hub-managed-connectivity.drawio](hub-managed-connectivity.drawio) **drpartner-minimal** tab.
+Aligned diagram (PNG); source SVG and [hub-managed-connectivity.drawio](hub-managed-connectivity.drawio) **drpartner-minimal** tab. GitHub does not render local SVG in markdown reliably.
 
 ## Shared requirements
 
@@ -122,3 +109,5 @@ GitHub’s Mermaid renderer does not align multi-row hub/spoke diagrams reliably
 | Full component schematic (drpartner-s4) | [ramendr-architecture-drpartner-s4.drawio](ramendr-architecture-drpartner-s4.drawio) |
 | Full component schematic (drpartner-minimal) | [ramendr-architecture-drpartner-minimal.drawio](ramendr-architecture-drpartner-minimal.drawio) |
 | Connectivity overview (all variants) | [hub-managed-connectivity.drawio](hub-managed-connectivity.drawio) |
+| drpartner-s4 connectivity (PNG) | [drpartner-s4-connectivity.png](drpartner-s4-connectivity.png) |
+| drpartner-minimal connectivity (PNG) | [drpartner-minimal-connectivity.png](drpartner-minimal-connectivity.png) |
