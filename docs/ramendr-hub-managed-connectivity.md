@@ -62,7 +62,7 @@ ACM needs DNS resolvability of managed cluster APIs. S3 metadata lives on **hub 
 
 ![drpartner-s4 connectivity](drpartner-s4-connectivity.png)
 
-Aligned diagram (PNG); source SVG and [hub-managed-connectivity.drawio](hub-managed-connectivity.drawio) **drpartner-s4** tab. GitHub does not render local SVG in markdown reliably.
+Aligned diagram (PNG); source SVG and [hub-managed-connectivity.drawio](hub-managed-connectivity.drawio) **drpartner-s4** tab. GitHub does not render local SVG in Markdown reliably.
 
 ### Hub S4 detail
 
@@ -81,7 +81,7 @@ ACM needs DNS resolvability of managed cluster APIs. Deploys partner operators (
 
 ![drpartner-minimal connectivity](drpartner-minimal-connectivity.png)
 
-Aligned diagram (PNG); source SVG and [hub-managed-connectivity.drawio](hub-managed-connectivity.drawio) **drpartner-minimal** tab. GitHub does not render local SVG in markdown reliably.
+Aligned diagram (PNG); source SVG and [hub-managed-connectivity.drawio](hub-managed-connectivity.drawio) **drpartner-minimal** tab. GitHub does not render local SVG in Markdown reliably.
 
 ## Shared requirements
 
