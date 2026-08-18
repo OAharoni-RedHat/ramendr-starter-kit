@@ -9,6 +9,15 @@ If you've followed a link to this repository, but are not really sure what it co
 or how to use it, head over to [RamenDR Starter Kit](https://validatedpatterns.io/patterns/ramendr-starter-kit/)
 for additional context and installation instructions.
 
+## Documentation
+
+| Topic | URL |
+|-------|-----|
+| Pattern overview and architecture | [RamenDR Starter Kit](https://validatedpatterns.io/patterns/ramendr-starter-kit/) |
+| Deployment and secrets | [Getting Started](https://validatedpatterns.io/patterns/ramendr-starter-kit/getting-started/) |
+| Install sequencing, scripts, and operations | [Installation Details](https://validatedpatterns.io/patterns/ramendr-starter-kit/installation-details/) |
+| Architecture and connectivity (variants) | [Architecture](https://validatedpatterns.io/patterns/ramendr-starter-kit/architecture/) · [Connectivity](https://validatedpatterns.io/patterns/ramendr-starter-kit/connectivity/) |
+
 ## Variants
 
 This pattern uses the clustergroup/ACM `variants/` folder layout. Presence of
