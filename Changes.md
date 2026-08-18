@@ -5,7 +5,7 @@ v1.3 - August 2026
 * BYOC validation (`ansible/playbooks/validate_byoc.yml`): remove worker metal /
   OpenShift Virtualization instance-type checks; keep reachability, matching OCP
   minor version, and non-overlapping pod/service CIDR validation.
-* Pattern documentation: README links to the
+* Pattern documentation: the repository readme links to the
   [Validated Patterns docsite](https://validatedpatterns.io/patterns/ramendr-starter-kit/)
   (Getting Started, Installation Details, Architecture, Connectivity). Remove duplicate
   `docs/` content from this repository (assets and prose live in validatedpatterns/docs).
