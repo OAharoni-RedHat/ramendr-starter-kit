@@ -43,6 +43,7 @@ clusterGroup:
     rhdr:
       name: rhdr-multicluster-operator
       namespace: openshift-operators
+      source: rhdr-catalog
       channel: stable-4.22
 
     cert-manager:
