@@ -1,6 +1,6 @@
 ---
 clusterGroup:
-  name: drpartner-s4
+  name: rhdr-s4
   isHubCluster: true
   namespaces:
     cluster-ca-mgt: {}
