@@ -41,9 +41,9 @@ clusterGroup:
     # Alternate Ramen productization (replace or disable MCO above when akkjjjk
     # non-ODF Ramen operator CSV/package is available). Example:
     rhdr:
-       name: rhdr-multicluster-operator
-       namespace: openshift-operators
-       channel: stable-4.22
+      name: rhdr-multicluster-operator
+      namespace: openshift-operators
+      channel: stable-4.22
 
     cert-manager:
       name: openshift-cert-manager-operator
