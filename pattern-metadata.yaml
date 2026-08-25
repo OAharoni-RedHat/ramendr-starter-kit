@@ -57,6 +57,11 @@ variants:
     description: >-
       Partner CSI foundation with hub S4 object storage — Submariner, OADP,
       OCP-V, Ramen/MCO; infrastructure DRPolicy/DRClusters without DRPC/VMs
+  - name: rhdr-s4
+    description: >-
+      Partner CSI foundation with hub S4 object storage — Submariner, OADP,
+      OCP-V, Ramen/MCO; infrastructure DRPolicy/DRClusters without DRPC/VMs.
+      Uses preview builds of RHDR (for testing only, not production)
   - name: drpartner-minimal
     description: >-
       Partner CSI foundation without S4, Submariner, or DRCluster sync/validation —
