@@ -18,6 +18,10 @@ clusterGroup:
     cert-manager: {}
     vp-manage-proxy-cluster-ca: {}
     vp-s4-storage: {}
+  indexImages:
+    rhdr:
+      name: rhdr-catalog
+      image: quay.io/openshift-virtualization-dr/rhdr-mirror:fbc-index-staging
   subscriptions:
     acm:
       name: advanced-cluster-management
@@ -30,16 +34,16 @@ clusterGroup:
       channel: stable-v1
 
     # Known ODF productization of Ramen (ODF Multicluster Orchestrator).
-    odf-multicluster-orchestrator:
-      name: odf-multicluster-orchestrator
-      namespace: openshift-operators
+    #odf-multicluster-orchestrator:
+    #  name: odf-multicluster-orchestrator
+    #  namespace: openshift-operators
 
-    # Alternate Ramen productization (replace or disable MCO above when a
+    # Alternate Ramen productization (replace or disable MCO above when akkjjjk
     # non-ODF Ramen operator CSV/package is available). Example:
-    # ramen:
-    #   name: <ramen-operator-package>
-    #   namespace: openshift-operators
-    #   channel: <channel>
+    rhdr:
+       name: rhdr-multicluster-operator
+       namespace: openshift-operators
+       channel: stable-4.22
 
     cert-manager:
       name: openshift-cert-manager-operator
