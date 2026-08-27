@@ -233,11 +233,8 @@ clusterGroup:
       name: vp-s4-storage
       namespace: vp-s4-storage
       argoProject: hub
-      repoURL: https://github.com/validatedpatterns/vp-s4-storage-chart.git
-      chartVersion: fix_race
-      path: "."
-      #chart: vp-s4-storage
-      #chartVersion: 0.2.*
+      chart: vp-s4-storage
+      chartVersion: 0.2.*
       overrides:
         # Vault paths from values-secret.yaml.template (s4-*-credentials; adjust prefix as needed)
         - name: s4UICredentials.vaultKey
