@@ -196,7 +196,7 @@ clusterGroup:
       chart: ensure-openshift-console-plugins
       chartVersion: 0.1.*
       extraValueFiles:
-        - '$patternref/variants/drpartner-s4/values-console-plugins-hub.yaml'
+        - '$patternref/variants/rhdr-s4/values-console-plugins-hub.yaml'
 
     opp-policy:
       name: opp-policy
@@ -222,7 +222,7 @@ clusterGroup:
           - ServerSideApply=true
       extraValueFiles:
         - '$patternref/overrides/values-cluster-names.yaml'
-        - '$patternref/variants/drpartner-s4/values-opp-policy.yaml'
+        - '$patternref/variants/rhdr-s4/values-opp-policy.yaml'
       ignoreDifferences:
       - group: operators.openshift.io
         kind: Console
@@ -318,7 +318,7 @@ clusterGroup:
           - RespectIgnoreDifferences=true
       extraValueFiles:
         - '/overrides/values-cluster-names.yaml'
-        - '$patternref/variants/drpartner-s4/values-regional-dr.yaml'
+        - '$patternref/variants/rhdr-s4/values-regional-dr.yaml'
       ignoreDifferences:
         - group: internal.open-cluster-management.io
           kind: ManagedClusterInfo
