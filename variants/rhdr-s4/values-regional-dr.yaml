@@ -1,3 +1,4 @@
+---
 # Partner CSI + S4: DRPolicy + hub DRClusters + validation without DRPC/VMs.
 # Requires regionaldr-with-virt 0.1.3 (ramen.opsNamespace + clusterServiceVersionName).
 # Buckets are created by vp-s4-storage (s4Role.buckets); regionaldr upserts hub s3StoreProfiles
@@ -40,3 +41,7 @@ regionalDR:
     drpolicies:
       - interval: 2m
         name: 2m-drpolicy
+
+# Run in BYOC mode by default. Most test scenarios require this for this
+# variant.
+byoc: true
