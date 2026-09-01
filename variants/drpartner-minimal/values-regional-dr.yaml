@@ -6,9 +6,16 @@
 # destination $ARGOCD_APP_NAMESPACE) and adds hub ignoreDifferences for
 # Application/regional-dr syncPolicy.automated so parent selfHeal cannot
 # re-enable autosync.
+#
+# Preview RHDR catalog, IDMS, and hub subscription live in the hub/spoke BOMs
+# (same as drpartner-s4), not in this regionaldr overlay.
 ramen:
   resourcesEnabled: false
   infrastructureEnabled: false
 
 edgeGitopsVms:
   enabled: false
+
+# Run in BYOC mode by default. Most test scenarios require this for this
+# variant.
+byoc: true
