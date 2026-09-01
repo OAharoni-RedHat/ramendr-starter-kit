@@ -3,12 +3,11 @@
 v1.3 - September 2026
 
 * Drop the ODF-MCO `drpartner-s4` variant and rename `rhdr-s4` to `drpartner-s4`.
-* Align the ODF-MCO `drpartner-minimal` variant with the RHDR catalog and bundle.
+* `drpartner-minimal` uses the same preview RHDR catalog/IDMS/subscription and
+  defaults to `byoc: true`. The `odf` variant is unchanged.
 
 v1.3 - August 2026
 
-  `drpartner-minimal` uses the same preview RHDR catalog/IDMS/subscription and
-  defaults to `byoc: true`. The `odf` variant is unchanged.
 * BYOC validation (`ansible/playbooks/validate_byoc.yml`): remove worker metal /
   OpenShift Virtualization instance-type checks; keep reachability, matching OCP
   minor version, and non-overlapping pod/service CIDR validation.
