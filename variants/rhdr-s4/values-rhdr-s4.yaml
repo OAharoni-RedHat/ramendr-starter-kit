@@ -296,11 +296,8 @@ clusterGroup:
       name: regional-dr
       namespace: regional-dr
       argoProject: opp
-      #chart: regionaldr-with-virt
-      #chartVersion: 0.1.*
-      repoURL: https://github.com/eduffy-redhat/regionaldr-with-virt-chart.git
-      chartVersion: ramenconfigmap-update-script
-      path: "."
+      chart: regionaldr-with-virt
+      chartVersion: 0.1.*
       annotations:
         argocd.argoproj.io/sync-wave: "10"
       # automated starts on so install can settle; PostSync argocd-sync-disable
