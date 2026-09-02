@@ -55,9 +55,11 @@ variants:
     description: Baseline full ODF Regional DR with Virtualization
   - name: drpartner-s4
     description: >-
-      Partner CSI foundation with hub S4 object storage — Submariner, OADP,
-      OCP-V, Ramen/MCO; infrastructure DRPolicy/DRClusters without DRPC/VMs
+      Partner CSI foundation with hub S4 object storage — OADP, OCP-V,
+      preview RHDR; infrastructure DRPolicy/DRClusters without DRPC/VMs.
+      Uses preview builds of RHDR (for testing only, not production)
   - name: drpartner-minimal
     description: >-
       Partner CSI foundation without S4, Submariner, or DRCluster sync/validation —
-      OADP, OCP-V, Ramen/MCO only (Hive/BYOC bring-up)
+      OADP, OCP-V, preview RHDR only (Hive/BYOC bring-up; byoc true by default).
+      Uses preview builds of RHDR (for testing only, not production)
