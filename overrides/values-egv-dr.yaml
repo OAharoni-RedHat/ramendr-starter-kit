@@ -33,3 +33,6 @@ vms:
   edgenode:
     count: 4
     role: node
+
+boutique:
+  deploy: true

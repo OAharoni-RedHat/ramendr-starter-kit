@@ -11,6 +11,7 @@ clusterGroup:
     openshift-storage: {}
     policies: {}
     gitops-vms: {}
+    boutique: {}
     external-dns-operator: {}
     external-secrets-operator:
       operatorGroup: true

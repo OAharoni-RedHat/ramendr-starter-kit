@@ -28,6 +28,9 @@ clusterOverrides:
 # install_config.metadata.name (mhj-ocp-422-p). Ramen uses this to target ManifestWork.
 drpc:
   preferredCluster: ocp-primary
+  protectedNamespaces:
+    - gitops-vms
+    - boutique
 
 # Set this to "true", provision clusters, and add their kubeconfigs
 # as described in the values-secret template; then run
