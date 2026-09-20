@@ -36,3 +36,4 @@ vms:
 
 boutique:
   deploy: true
+  storageClass: ocs-storagecluster-ceph-rbd
