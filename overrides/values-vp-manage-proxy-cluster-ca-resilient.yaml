@@ -7,9 +7,10 @@
 # ConfigMap data key is "cabundle" (no dots — YAML-safe for Ramen/Velero).
 export:
   image:
-    # registry.redhat.io/openshift4/ose-cli does not publish a :latest tag.
-    # Pin to the cluster minor version; update when upgrading OCP.
-    tag: v4.22
+    # registry.redhat.io/openshift4/ose-cli does not publish :latest or :v4.x minor tags.
+    # Use the internal OpenShift CLI imagestream which is always present and version-matched.
+    repository: image-registry.openshift-image-registry.svc:5000/openshift/cli
+    tag: latest
 
 trustManager:
   differentialBundle:
