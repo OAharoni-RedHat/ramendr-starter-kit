@@ -5,12 +5,19 @@
 # full system CA package. The by-label bundle targets namespaces labeled with
 # cluster-ca.vp.io/differential-ca-target: "true" (e.g. openshift-adp).
 # ConfigMap data key is "cabundle" (no dots — YAML-safe for Ramen/Velero).
-export:
+
+# registry.redhat.io/openshift4/ose-cli rejects :latest and has no :v4.x minor tags.
+# Use the internal OpenShift CLI imagestream which is always present and version-matched.
+syncJob:
   image:
-    # registry.redhat.io/openshift4/ose-cli does not publish :latest or :v4.x minor tags.
-    # Use the internal OpenShift CLI imagestream which is always present and version-matched.
     repository: image-registry.openshift-image-registry.svc:5000/openshift/cli
     tag: latest
+
+eso:
+  export:
+    image:
+      repository: image-registry.openshift-image-registry.svc:5000/openshift/cli
+      tag: latest
 
 trustManager:
   differentialBundle:
