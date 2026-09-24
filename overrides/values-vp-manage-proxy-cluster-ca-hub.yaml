@@ -3,6 +3,12 @@
 # Enables the differential CA bundle (cluster API/ingress CAs only, no system trust store)
 # in openshift-config as vp-pattern-proxy-ca-bundle-differential (key: cabundle).
 # opp-policy s3-ssl / s3CaInjector read that differential ConfigMap for Ramen caCertificates.
+export:
+  image:
+    # registry.redhat.io/openshift4/ose-cli does not publish a :latest tag.
+    # Pin to the cluster minor version; update when upgrading OCP.
+    tag: v4.22
+
 trustManager:
   differentialBundle:
     enabled: true

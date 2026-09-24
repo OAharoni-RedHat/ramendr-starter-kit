@@ -5,6 +5,12 @@
 # full system CA package. The by-label bundle targets namespaces labeled with
 # cluster-ca.vp.io/differential-ca-target: "true" (e.g. openshift-adp).
 # ConfigMap data key is "cabundle" (no dots — YAML-safe for Ramen/Velero).
+export:
+  image:
+    # registry.redhat.io/openshift4/ose-cli does not publish a :latest tag.
+    # Pin to the cluster minor version; update when upgrading OCP.
+    tag: v4.22
+
 trustManager:
   differentialBundle:
     enabled: true
