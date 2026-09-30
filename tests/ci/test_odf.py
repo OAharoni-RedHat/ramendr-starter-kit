@@ -165,13 +165,12 @@ def test_argocd_reachable(openshift_dyn_client):
     indirect=True,
 )
 def test_argocd_applications_health_hub(openshift_dyn_client):
-    # vp-gitops: top-level hub app.
-    # ramendr-starter-kit-odf: component apps.
+    # vp-gitops: ArgoCD application name.
     # vp-manage-proxy-cluster-ca OutOfSync: ESO schema defaults
     # (nullBytePolicy, deletionPolicy, engineVersion, mergePolicy)
     # not emitted by the chart; fixed via
     # ignoreDifferences in values-odf.yaml.
-    projects = ["vp-gitops", "ramendr-starter-kit-odf"]
+    projects = ["vp-gitops"]
     application.assert_argocd_applications(openshift_dyn_client, projects)
 
 
