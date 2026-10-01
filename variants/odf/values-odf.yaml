@@ -92,6 +92,14 @@ clusterGroup:
       extraValueFiles:
         - '$patternref/overrides/values-console-plugins-hub.yaml'
 
+    observability:
+      name: observability
+      namespace: open-cluster-management-observability
+      chart: openshift-observability
+      chartVersion: 0.1.*
+      extraValueFiles:
+        - '$patternref/variants/odf/values-rdr-o11y.yaml'
+
     opp-policy:
       name: opp-policy
       namespace: openshift
