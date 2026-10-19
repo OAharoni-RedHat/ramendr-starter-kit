@@ -63,3 +63,9 @@ variants:
       Partner CSI foundation without S4, Submariner, or DRCluster sync/validation —
       OADP, OCP-V, preview RHDR only (Hive/BYOC bring-up; byoc true by default).
       Uses preview builds of RHDR (for testing only, not production)
+  - name: techdemo
+    description: >-
+      Full ODF Regional DR with Virtualization and Ansible Automation Platform
+      (AAP) config-as-code. Adds AAP instance and aap-config application driven
+      by the ramendr-techdemo-config-as-code repo. Deploys the Boutique workload
+      on spoke clusters for end-to-end demo scenarios.
