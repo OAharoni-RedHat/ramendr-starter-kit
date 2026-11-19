@@ -80,6 +80,7 @@ clusterGroup:
     csi-addons:
       name: odf-csi-addons-operator
       namespace: openshift-storage
+      channel: stable-4.22
 
   argoProjects:
     - resilient
