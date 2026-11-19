@@ -1,6 +1,8 @@
 ---
 clusterGroup:
-  name: drpartner-minimal
+  # Must satisfy (2 * len(name) + len(global.pattern)) < 47 for Argo DNS
+  # (pattern=ramendr-starter-kit). Folder/variant name stays drpartner-minimal.
+  name: minimal
   isHubCluster: true
   namespaces:
     cluster-ca-mgt: {}
