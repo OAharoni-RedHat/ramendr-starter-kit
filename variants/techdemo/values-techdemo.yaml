@@ -231,7 +231,7 @@ clusterGroup:
           - RespectIgnoreDifferences=true
       extraValueFiles:
         - '/overrides/values-cluster-names.yaml'
-        - '/overrides/values-egv-dr.yaml'
+        - '$patternref/variants/techdemo/values-egv-dr.yaml'
       ignoreDifferences:
         - group: internal.open-cluster-management.io
           kind: ManagedClusterInfo
