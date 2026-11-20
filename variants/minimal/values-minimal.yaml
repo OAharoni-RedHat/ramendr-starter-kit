@@ -1,7 +1,7 @@
 ---
 clusterGroup:
   # Must satisfy (2 * len(name) + len(global.pattern)) < 47 for Argo DNS
-  # (pattern=ramendr-starter-kit). Folder/variant name stays drpartner-minimal.
+  # (pattern=ramendr-starter-kit). Folder/variant name is minimal.
   name: minimal
   isHubCluster: true
   namespaces:
@@ -191,7 +191,7 @@ clusterGroup:
       chart: ensure-openshift-console-plugins
       chartVersion: 0.1.*
       extraValueFiles:
-        - '$patternref/variants/drpartner-minimal/values-console-plugins-hub.yaml'
+        - '$patternref/variants/minimal/values-console-plugins-hub.yaml'
 
     opp-policy:
       name: opp-policy
@@ -217,7 +217,7 @@ clusterGroup:
           - ServerSideApply=true
       extraValueFiles:
         - '/overrides/values-cluster-names.yaml'
-        - '$patternref/variants/drpartner-minimal/values-opp-policy.yaml'
+        - '$patternref/variants/minimal/values-opp-policy.yaml'
       ignoreDifferences:
       - group: operators.openshift.io
         kind: Console
@@ -292,7 +292,7 @@ clusterGroup:
           - RespectIgnoreDifferences=true
       extraValueFiles:
         - '/overrides/values-cluster-names.yaml'
-        - '$patternref/variants/drpartner-minimal/values-regional-dr.yaml'
+        - '$patternref/variants/minimal/values-regional-dr.yaml'
       ignoreDifferences:
         - group: internal.open-cluster-management.io
           kind: ManagedClusterInfo
