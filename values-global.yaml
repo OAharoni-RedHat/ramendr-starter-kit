@@ -21,7 +21,7 @@ main:
   #   Adds AAP instance and aap-config application driven by the ramendr-techdemo-config-as-code repo. 
   #   Deploys the Boutique workload on spoke clusters for end-to-end demo scenarios.
   #   odf remains the documented default in pattern-metadata.yaml.
-  variant: techdemo
+  variant: odf
   multiSourceConfig:
     enabled: true
     # Need >= 0.9.57 for variants/ folder path helpers (vpNewFolderDir).

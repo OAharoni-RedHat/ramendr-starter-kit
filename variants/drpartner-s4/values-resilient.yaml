@@ -76,10 +76,10 @@ clusterGroup:
           - name: UNSUPPORTED_ADDON_FEATURES
             value: "TrustManager=true"
 
-    # Public CSI Addons (productized packaging of kubernetes-csi-addons).
     csi-addons:
       name: odf-csi-addons-operator
       namespace: openshift-storage
+      channel: stable-4.22
 
   argoProjects:
     - resilient
