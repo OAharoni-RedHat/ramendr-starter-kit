@@ -81,6 +81,12 @@ clusterGroup:
       namespace: openshift-storage
       channel: stable-4.22
 
+    # Recipe controller (ODF/RHODF packaging via redhat-operators).
+    recipe:
+      name: recipe
+      namespace: openshift-storage
+      channel: stable-4.22
+
   argoProjects:
     - resilient
 
