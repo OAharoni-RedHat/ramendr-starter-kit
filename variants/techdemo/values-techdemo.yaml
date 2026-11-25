@@ -29,7 +29,7 @@ clusterGroup:
     aap-operator:
       name: ansible-automation-platform-operator
       namespace: ansible-automation-platform
-      channel: stable-2.6
+      channel: stable-2.7
 
     acm:
       name: advanced-cluster-management
